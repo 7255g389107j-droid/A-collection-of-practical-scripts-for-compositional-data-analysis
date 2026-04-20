@@ -18,6 +18,10 @@
 # Remove columns containing at least one zero and re-assign to 'Dataset'
 Dataset <- Dataset[, colSums(Dataset == 0) == 0]
 
+d_m <- as.matrix(Dataset)
+eff_lib <- mean(rowSums(d_m))
+n_total <- nrow(d_m)
+
 # --- 1. CORE WRAPPER FOR STABILITY METRICS ---
 calc_system_stability <- function(data_subset, lib_size) {
   L <- log(data_subset)
