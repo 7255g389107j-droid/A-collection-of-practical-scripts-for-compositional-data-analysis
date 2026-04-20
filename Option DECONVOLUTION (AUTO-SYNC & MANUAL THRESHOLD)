@@ -1,0 +1,111 @@
+# =================================================================
+# ITAGAKI-SYSTEM V5000.0: DEFINITIVE DECONVOLUTION (AUTO-SYNC & MANUAL THRESHOLD)
+# -----------------------------------------------------------------
+# Methodology: Orthogonal Drift Neutralization (ODN) with Thresholding
+# Philosophy: Minimum Bias / Physical Quality Control
+# Developer: Tatsuki Itagaki (2026)
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License (https://opensource.org)
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Ohta, T. (2011). DOI: 10.1007/s11004-011-9332-y
+# Itagaki, T (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T (2025). DOI: 10.3390/nu17233681
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
+# =================================================================
+
+# --- 0. USER-DEFINED PARAMETERS ---
+manual_threshold <- 0.0001  
+set.seed(42)
+n_boot <- 1000
+
+# --- 1. DATA PURIFICATION ---
+raw_m <- as.matrix(Dataset)
+valid_mask <- apply(raw_m, 2, function(x) all(x >= manual_threshold))
+
+if(sum(valid_mask) < 3) {
+  stop(paste("Insufficient taxa (", sum(valid_mask), ") passed threshold:", manual_threshold))
+}
+
+d_m <- raw_m[, valid_mask, drop = FALSE]
+d_m <- sweep(d_m, 1, rowSums(d_m), "/") 
+n_samples <- nrow(d_m)
+n_taxa <- ncol(d_m)
+taxa_names <- colnames(d_m)
+
+# --- 2. MASTER ANCHOR IDENTIFICATION ---
+get_geometric_purity <- function(P) {
+  L <- log(P); obs_v <- apply(L, 2, var); vlr <- var(L)
+  return(1 / (apply(outer(obs_v, obs_v, "+") - 2 * vlr, 1, median)))
+}
+global_anchor_idx <- which.max(get_geometric_purity(d_m))
+global_anchor_name <- taxa_names[global_anchor_idx]
+
+# --- 3. ODN: ORTHOGONAL DRIFT NEUTRALIZATION ---
+anchor_log <- log(d_m[, global_anchor_idx])
+bg_matrix <- log(d_m[, -global_anchor_idx])
+bg_signal <- prcomp(bg_matrix, scale. = TRUE)$x[, 1]
+
+alpha_opt <- optimize(f = function(a) {
+  purified <- anchor_log - (a * bg_signal)
+  abs(cor(purified, bg_signal))
+}, interval = c(-1, 1))$minimum
+
+# Restoration of Physical Fact (S1 baseline)
+purified_log <- anchor_log - (alpha_opt * bg_signal)
+sf_raw <- exp(-purified_log)
+sf_locked_fact <- sf_raw / sf_raw[1]
+
+# --- 4. BOOTSTRAP ENGINE ---
+boot_res <- matrix(NA, nrow = n_boot, ncol = n_samples)
+for(b in 1:n_boot) {
+  b_idx <- c(global_anchor_idx, sample((1:n_taxa)[-global_anchor_idx], replace = TRUE))
+  b_dm <- d_m[, b_idx, drop = FALSE]
+  b_dm <- sweep(b_dm, 1, rowSums(b_dm), "/")
+  
+  b_anchor_log <- log(b_dm[, 1])
+  try({
+    b_bg_signal <- prcomp(log(b_dm[, -1]), scale. = TRUE)$x[, 1]
+    b_purified <- b_anchor_log - (alpha_opt * b_bg_signal)
+    b_sf <- exp(-b_purified)
+    boot_res[b, ] <- b_sf / b_sf[1]
+  }, silent = TRUE)
+}
+
+# CI Calibration
+sf_boot_mean <- apply(boot_res, 2, mean, na.rm = TRUE)
+sf_lower <- sf_locked_fact * (apply(boot_res, 2, quantile, 0.025, na.rm = TRUE) / sf_boot_mean)
+sf_upper <- sf_locked_fact * (apply(boot_res, 2, quantile, 0.975, na.rm = TRUE) / sf_boot_mean)
+
+# --- 5. NUMERICAL FACT REPORT ---
+report_df <- data.frame(
+  SampleID     = 1:n_samples,
+  Abs_Ratio    = round(sf_locked_fact, 6),
+  CI_95_Lower  = round(sf_lower, 6),
+  CI_95_Upper  = round(sf_upper, 6),
+  CI_Width     = round(sf_upper - sf_lower, 6)
+)
+
+cat("\n==========================================================\n")
+cat("   ITAGAKI V5000.0: FINAL FACTUAL DECONVOLUTION REPORT\n")
+cat("==========================================================\n")
+cat(sprintf(" MASTER ANCHOR   : %s\n", global_anchor_name))
+cat(sprintf(" THRESHOLD (QC)  : %g\n", manual_threshold))
+cat(sprintf(" AUTO-ALPHA (ODN): %.6f\n", alpha_opt))
+cat("----------------------------------------------------------\n")
+print(report_df, row.names = FALSE)
+cat("==========================================================\n")
+
+# --- 6. VISUALIZATION OF THE REALITY ---
+dev.new(width=10, height=7); par(mar=c(5, 6, 5, 2), bg="#FDFDFD")
+y_max <- max(sf_upper) * 1.2
+bp <- barplot(sf_locked_fact, ylim=c(0, y_max), col="#2c3e50", border=NA,
+              ylab="Manually Filtered Absolute Mass Ratio", names.arg=1:n_samples)
+arrows(bp, sf_lower, bp, sf_upper, angle=90, code=3, length=0.05, lwd=2, col="#e74c3c")
+text(bp, sf_upper, labels=round(sf_locked_fact, 2), pos=3, cex=0.8, font=2)
+abline(h=1, lty=2, col="darkblue")
+title(main="ITAGAKI V5000.0: Polished Physical Reality")
+mtext(paste("Threshold:", manual_threshold, "| Alpha:", round(alpha_opt, 4)), side=3, line=0.5)
