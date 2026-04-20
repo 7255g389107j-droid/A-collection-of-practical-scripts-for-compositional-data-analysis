@@ -1,0 +1,150 @@
+# =================================================================
+# ITAGAKI-SYSTEM V25.0: MULTI-TIME & SUBJECT TRAJECTORY
+# -----------------------------------------------------------------
+# Feature: Subject-linked PCA Trajectory for Multi-Group/Time
+# Logic: Dynamic Palette + Subject ID Mapping
+# Developed by: Tatsuki Itagaki
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License (https://opensource.org)
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Aitchison, J. (2002). DOI: 10.1111/1467-9876.00275
+# Ohta, T. (2011). DOI: 10.1007/s11004-011-9332-y
+# Itagaki, T. (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T. (2025). DOI: 10.3390/nu17233681
+# Itagaki, T. (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T. (2026). DOI: 10.13140/RG.2.2.35015.25762
+# =================================================================
+
+itagaki_trajectory_v25 <- function(Dataset, Group_Labels, Subject_IDs) {
+  
+  P_raw <- as.matrix(Dataset)
+  groups <- as.factor(Group_Labels)
+  lvls <- levels(groups)
+  subs <- as.factor(Subject_IDs)
+  
+  # 1. DYNAMIC COLOR PALETTE (For many groups)
+  palette_cols <- terrain.colors(length(lvls))
+  group_cols <- palette_cols[as.numeric(groups)]
+  
+  # 2. CLR-PCA (Standard Itagaki Logic)
+  P_core <- sweep(P_raw, 1, rowSums(P_raw), "/")
+  clr_core <- sweep(log(P_core), 1, rowMeans(log(P_core)), "-") #If there are zeros, you can add 1e-20 or try anthor method. 
+  pca_res <- prcomp(clr_core, center = TRUE, scale. = FALSE)
+  var_exp <- (pca_res$sdev^2) / sum(pca_res$sdev^2) * 100
+
+  # 3. VISUALIZATION (PCA with Subject Lines)
+  plot(pca_res$x[, 1], pca_res$x[, 2], col = group_cols, pch = 19, cex = 1.5,
+       xlab = sprintf("PC1 (%.1f%%)", var_exp[1]), 
+       ylab = sprintf("PC2 (%.1f%%)", var_exp[2]),
+       main = "Aitchison Trajectory: Subject-wise Movement")
+  grid()
+
+  # 4. SUBJECT-WISE LINE DRAWING (The 'Trajectory' Fact)
+  # Connect samples belonging to the same Subject ID
+  for(s in levels(subs)) {
+    s_idx <- which(subs == s)
+    # Order points by time (assuming Group_Labels order represents time)
+    lines(pca_res$x[s_idx, 1], pca_res$x[s_idx, 2], col = "gray70", lwd = 0.8)
+  }
+  
+  legend("topright", legend = lvls, col = palette_cols, pch = 19, bty = "n", cex = 0.8)
+  
+  return(list(pca = pca_res, clr = clr_core))
+}
+
+# --- USAGE EXAMPLE ---
+# Dataset: 30 rows (10 subjects x 3 timepoints)
+# Subject_IDs <- rep(paste0("Subj_", 1:10), each = 3)
+# Group_Labels <- rep(c("Point 0", "Point 1", "Point 2"), 10)
+# results <- itagaki_trajectory_v25(Dataset, Group_Labels, Subject_IDs)
+# my_rot <- results$pca$rotation
+# head(my_rot[order(abs(my_rot[, "PC1"]), decreasing = TRUE), 1:2], 10)
+# results$pca$x
+
+# =================================================================
+# ITAGAKI-SYSTEM V36.5: ULTIMATE BI-PLOT (Anti-Collision Engine)
+# -----------------------------------------------------------------
+# Feature: Zig-zag Labelling & Forced Sample ID Display
+# =================================================================
+
+# --- 1. DATA PREPARATION ---
+pca_res <- results$pca 
+var_exp <- (pca_res$sdev^2) / sum(pca_res$sdev^2) * 100
+pc1_v <- round(var_exp[1], 1); pc2_v <- round(var_exp[2], 1)
+
+# Variance-Weighted Scaling
+scaled_L <- sweep(pca_res$rotation, 2, pca_res$sdev, FUN = "*")
+top10_idx <- order(abs(scaled_L[, "PC1"]), decreasing = TRUE)[1:10] # TopX and PCX
+L_top <- scaled_L[top10_idx, 1:2]
+S <- pca_res$x
+
+# --- 2. [MANUAL TUNING AREA] ---
+arrow_scale  <- 0.85  # Length of red arrows
+base_dist    <- 1.18  # Base distance from arrow tip
+jitter_y_amp <- 0.12  # Vertical jitter (increase if still overlapping)
+jitter_x_amp <- 0.08  # Horizontal jitter for dense areas
+sample_cex   <- 1.1   # Sample ID size
+load_cex     <- 0.75  # Component name size
+
+# --- 3. DYNAMIC SCALING & RANGE ---
+mult <- min((max(S[,1])-min(S[,1]))/max(L_top[,1]), (max(S[,2])-min(S[,2]))/max(L_top[,2])) * arrow_scale
+x_lim <- range(c(S[,1], L_top[,1]*mult)) * 1.8 # Expanded margin
+y_lim <- range(c(S[,2], L_top[,2]*mult)) * 1.8
+
+# --- 4. PLOT INITIALIZATION ---
+par(mar = c(5, 6, 5, 5), bg = "#FDFDFD", las = 1)
+plot(S[, 1:2], pch = 21, bg = "#BDC3C7", col = "#7F8C8D", cex = 1.8,
+     xlab = paste0("PC1 (", pc1_v, "%): Structural Shift"), 
+     ylab = paste0("PC2 (", pc2_v, "%): Underlying Trend"),
+     main = "ITAGAKI-SYSTEM: Final Biplot (Zero-Overlap)",
+     xlim = x_lim, ylim = y_lim)
+
+grid(col = "#ECF0F1", lty = 1)
+abline(h = 0, v = 0, lty = 2, col = "#95A5A6")
+
+# --- 5. SAMPLE LABELLING (FORCED) ---
+# Display Sample IDs (1, 2, 3, 4...) with bold font
+text(S[, 1], S[, 2], labels = rownames(S), pos = 3, offset = 0.8, cex = sample_cex, font = 2, col = "black")
+
+# --- 6. SCALED LOADING VECTORS ---
+arrows(0, 0, L_top[, 1] * mult, L_top[, 2] * mult, col = "#E74C3C", lwd = 3, length = 0.15)
+
+# --- 7. ZIG-ZAG ANTI-COLLISION LABELLING ---
+# Logic: Alternate offset distances and vertical positions based on index i
+for(i in 1:nrow(L_top)) {
+  tx <- L_top[i, 1] * mult
+  ty <- L_top[i, 2] * mult
+  
+  # Calculate base radial position
+  angle <- atan2(ty, tx)
+  deg   <- angle * 180 / pi
+  
+  # ZIG-ZAG LOGIC: Alternate radial distance to prevent names from clumping
+  # Every second label is pushed further out
+  dynamic_dist <- ifelse(i %% 2 == 0, base_dist, base_dist + 0.15)
+  
+  # VERTICAL JITTER: Alternate slight Y-shifts
+  y_jit <- ifelse(i %% 3 == 0, jitter_y_amp * diff(y_lim), 
+           ifelse(i %% 3 == 1, -jitter_y_amp * diff(y_lim), 0))
+  
+  # Determine text position index (1:Bottom, 2:Left, 3:Top, 4:Right)
+  d_pos <- ifelse(deg > -45 && deg <= 45, 4,
+           ifelse(deg > 45 && deg <= 135, 3,
+           ifelse(deg > -135 && deg <= -45, 1, 2)))
+  
+  # Plot Label with dynamic offset
+  text(tx * dynamic_dist, ty * dynamic_dist + y_jit, 
+       labels = rownames(L_top)[i], pos = d_pos, 
+       cex = load_cex, col = "#2C3E50", font = 2, xpd = TRUE)
+}
+
+# --- 8. CHRONOLOGICAL TRAJECTORY ---
+lines(S[, 1], S[, 2], col = "#3498DB", lty = 3, lwd = 2)
+
+# --- 9. SUMMARY ---
+legend("topright", legend = c("Samples", "Top 10 Drivers"), 
+       pch = c(21, NA), lty = c(NA, 1), col = c("#7F8C8D", "#E74C3C"), 
+       pt.bg = c("#BDC3C7", NA), bty = "n", cex = 0.8)
