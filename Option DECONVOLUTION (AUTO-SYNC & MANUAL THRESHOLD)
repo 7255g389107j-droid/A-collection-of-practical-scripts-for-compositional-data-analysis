@@ -17,6 +17,10 @@
 # Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
 # =================================================================
 
+# This feature is applicable only when the Invariance Ratio (IR) approaches zero and the Geometric Purity (Pg) reaches 0.9 or higher.
+# Overlapping error bars indicate that absolute shifts remain indistinguishable from noise;
+# conversely, non-overlapping error bars provide definitive evidence of absolute quantitative trends.
+
 # --- 0. USER-DEFINED PARAMETERS ---
 manual_threshold <- 0.0001  
 set.seed(42)
