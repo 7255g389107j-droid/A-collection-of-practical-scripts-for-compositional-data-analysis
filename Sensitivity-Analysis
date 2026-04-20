@@ -59,7 +59,7 @@ calc_system_stability <- function(data_subset, lib_size) {
     win[j] <- sum(apply(r, 2, function(x) sd(x)/mean(x)) < 
                   apply(1/r, 2, function(x) sd(x)/mean(x)), na.rm=TRUE)
   }
-  return(c(IR_Min = mean(ir_vals), PI_Max = pi_max, Win_Max = max(win)))
+  return(c(IR_Min = mean(ir_vals), PI_Max = pi_max, Win_Max = max(win))) # or return(c(IR_Min = ir_min, PI_Max = pi_max, Win_Max = max(win)))
 }
 
 # --- 2. EXECUTE LEAVE-ONE-OUT (LOO) ANALYSIS ---
