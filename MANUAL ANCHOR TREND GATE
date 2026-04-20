@@ -1,0 +1,121 @@
+# =================================================================
+# ITAGAKI-SYSTEM V11000.0: MANUAL ANCHOR TREND GATE
+# -----------------------------------------------------------------
+# Methodology: Manual Anchor Basis with Multi-Basis Verification
+# Features: User-Defined Anchor | LOO-Verified | Pass_SNR Gate
+# Philosophy: Factual Monotonicity based on Expert Selection
+# Developed by: Tatsuki Itagaki (2026)
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License (https://opensource.org)
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Ohta, T. (2011). DOI: 10.1007/s11004-011-9332-y
+# Itagaki, T (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T (2025). DOI: 10.3390/nu17233681
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
+# =================================================================
+
+# --- [0. OPERATOR CONFIGURATION] ---
+# MANUAL ANCHOR DEFINITION: Enter the exact Taxon Name here
+manual_anchor_name <- "Taxon_A" # Change to your target anchor name
+
+manual_threshold <- 0.0001  # QC: Minimum physical abundance filter
+snr_sensitivity  <- 1.8     # SNR: Drift correction intensity, It would be best not to lower it any further.
+pass_snr_limit   <- 2.0     # Pass_SNR: Minimum total fold-increase, 1.2; slight signs; 1.5; steady change; over 2.0 clear growth
+set.seed(42); n_boot <- 1000
+
+# --- [1. DATA PURIFICATION] ---
+raw_m <- as.matrix(Dataset[, colSums(Dataset == 0) == 0])
+# Ensure the manual anchor exists and passes the threshold
+if(!(manual_anchor_name %in% colnames(raw_m))) stop("Manual anchor not found in Dataset.")
+
+valid_mask <- apply(raw_m, 2, function(x) all(x >= manual_threshold))
+d_m <- sweep(raw_m[, valid_mask], 1, rowSums(raw_m[, valid_mask]), "/")
+n_s <- nrow(d_m); n_t <- ncol(d_m); t_names <- colnames(d_m)
+
+# --- [2. METRIC EXTRACTION & BASIS SELECTION] ---
+get_metrics <- function(P) {
+  L <- log(P); obs_v <- apply(L, 2, var); vlr <- var(L)
+  pi_s <- 1 / (apply(outer(obs_v, obs_v, "+") - 2 * vlr, 1, median))
+  eff_lib <- 1 / mean(apply(P, 2, min))
+  ir <- obs_v / (1 / (colMeans(P) * eff_lib))
+  return(list(pi = pi_s, ir = ir, g_center = rowMeans(L)))
+}
+metrics <- get_metrics(d_m)
+
+# Identify the index of the manual anchor
+manual_idx <- which(t_names == manual_anchor_name)
+
+# --- [3. TREND PILOT ENGINE (V16.1 SPEC)] ---
+process_basis <- function(target_idx, is_centroid = FALSE) {
+  log_p <- log(d_m)
+  if(is_centroid) {
+    rho_fact <- rep(0, n_s)
+    basis_name <- "GEOMETRIC_CENTROID"
+  } else {
+    rho_fact <- (log_p[, target_idx] - metrics$g_center) / snr_sensitivity
+    basis_name <- t_names[target_idx]
+  }
+  # Factual Point Estimate relative to Sample 1
+  sf_locked <- exp(-rho_fact) / exp(-rho_fact[1])
+  
+  # LOO + Pass_SNR Consistency Verification
+  loo_results <- sapply(1:n_s, function(i) {
+    loo_p <- sweep(d_m[-i, , drop=FALSE], 1, rowSums(d_m[-i, , drop=FALSE]), "/")
+    loo_log <- log(loo_p)
+    loo_gc <- rowMeans(loo_log)
+    if(is_centroid) { loo_sf <- rep(1, n_s - 1) } 
+    else { 
+      target_in_loo <- which(colnames(loo_p) == t_names[target_idx])
+      loo_sf_raw <- exp(-(loo_log[, target_in_loo] - loo_gc) / snr_sensitivity)
+      loo_sf <- loo_sf_raw / loo_sf_raw[1] 
+    }
+    loo_abs <- sweep(loo_p, 1, loo_sf, "*")
+    is_mono <- apply(loo_abs, 2, function(x) all(diff(x) > 0))
+    has_snr <- apply(loo_abs, 2, function(x) (x[length(x)] / x[1]) >= pass_snr_limit)
+    return(is_mono & has_snr)
+  })
+  verified_taxa <- t_names[which(rowSums(loo_results) == n_s)]
+  return(list(sf = sf_locked, verified = verified_taxa, name = basis_name))
+}
+
+# RUN: Manual Anchor vs Geometric Centroid
+manual_result <- process_basis(manual_idx)
+centroid_result <- process_basis(NULL, is_centroid = TRUE)
+plot_list <- list(manual_result, centroid_result)
+
+# --- [4. TRIANGULATION & CONSENSUS] ---
+consensus_growth <- intersect(manual_result$verified, centroid_result$verified)
+
+# --- [5. VISUALIZATION WITH LEFT-SIDE LABELS] ---
+if(length(consensus_growth) > 0) {
+  dev.new(width=12, height=8)
+  par(mfrow=c(1, 2), mar=c(5, 8, 5, 2), bg="#FDFDFD")
+  cols <- rainbow(length(consensus_growth))
+  
+  for(i in 1:2) {
+    abs_v <- sweep(d_m[, consensus_growth, drop=FALSE], 1, plot_list[[i]]$sf, "*")
+    matplot(abs_v, type="b", pch=16, lty=1, lwd=2, col=cols,
+            main=paste("Anchor:", plot_list[[i]]$name), 
+            ylab="Abs Mass Scale (Rel. to S1)", xlab="Sample Index", las=1)
+    grid(col="gray80")
+    for(j in 1:length(consensus_growth)) {
+      text(1, abs_v[1, j], labels=consensus_growth[j], pos=2, cex=0.75, col=cols[j], xpd=TRUE, font=2)
+    }
+    mtext(paste("Pass Gate:", length(plot_list[[i]]$verified)), side=3, line=0.5, cex=0.8, col="darkblue")
+  }
+}
+
+# --- [6. ANALYTICAL REPORT] ---
+cat("\n==========================================================\n")
+cat("   ITAGAKI V11000.0: MANUAL ANCHOR FACTUAL REPORT\n")
+cat("==========================================================\n")
+cat(sprintf("MANUAL ANCHOR  : %s\n", manual_anchor_name))
+cat(sprintf("SNR SENSITIVITY: %.2f | Pass_SNR: %.1f\n", snr_sensitivity, pass_snr_limit))
+cat("----------------------------------------------------------\n")
+cat("VERIFIED MONOTONIC GROWTH (Passed Manual Anchor + Centroid + LOO):\n")
+if(length(consensus_growth) > 0) print(consensus_growth) else cat("NONE DETECTED\n")
+cat("==========================================================\n")
