@@ -15,12 +15,26 @@
 # Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
 # =================================================================
 
-# Remove columns containing at least one zero and re-assign to 'Dataset'
-Dataset <- Dataset[, colSums(Dataset == 0) == 0]
+# --- 0. USER-DEFINED FILTERING & DYNAMIC SCALING ---
+set.seed(42) # For reproducibility
+min_abundance_threshold <- 0.00001 # User-defined strict threshold
 
-d_m <- as.matrix(Dataset)
-eff_lib <- mean(rowSums(d_m))
-n_total <- nrow(d_m)
+# Input: 'Dataset' must be a Proportion Matrix (Rows=Samples, Cols=Taxa)
+raw_data <- as.matrix(Dataset)
+n_s <- nrow(raw_data)
+
+# STRICT FILTERING: Only taxa present in ALL samples above threshold
+valid_taxa_mask <- apply(raw_data, 2, function(x) all(x >= min_abundance_threshold))
+if(sum(valid_taxa_mask) < 2) stop("Too few taxa passed filtering. Lower the threshold.")
+
+d_m <- raw_data[, valid_taxa_mask, drop = FALSE]
+taxa_ids <- colnames(d_m)
+if(is.null(taxa_ids)) taxa_ids <- paste0("Taxon_", 1:ncol(d_m))
+
+# [CRITICAL FIX] Dynamic Effective Library Size
+# Estimates the physical noise floor based on the actual data density
+avg_min_val <- mean(apply(d_m, 2, min))
+eff_lib <- 1 / avg_min_val 
 
 # --- 1. CORE WRAPPER FOR STABILITY METRICS ---
 calc_system_stability <- function(data_subset, lib_size) {
