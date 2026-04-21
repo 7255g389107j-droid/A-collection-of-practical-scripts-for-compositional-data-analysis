@@ -70,6 +70,8 @@ itagaki_trajectory_v25 <- function(Dataset, Group_Labels, Subject_IDs) {
  head(my_rot[order(my_rot[, "PC2"], decreasing = TRUE), 1:2], 10)
  results$pca$x
 
+# print(my_rot[order(abs(my_rot[, "PC1"]), decreasing = TRUE), 1:2])
+
 # =================================================================
 # ITAGAKI-SYSTEM V36.5: ULTIMATE BI-PLOT (Anti-Collision Engine)
 # -----------------------------------------------------------------
