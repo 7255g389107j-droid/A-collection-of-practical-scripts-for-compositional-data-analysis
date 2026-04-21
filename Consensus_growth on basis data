@@ -239,3 +239,45 @@ if(length(consensus_growth) > 0 && nrow(causal_links) > 0) {
   }
 }
 
+if(length(consensus_growth) > 0) {
+  
+  # Calculate final metrics for the report
+  abs_m_report <- sweep(d_m, 1, centroid_result$sf, "*")
+  
+  diag_summary <- data.frame(
+    Taxon = consensus_growth,
+    Total_Increase = numeric(length(consensus_growth)),
+    Final_Accel = numeric(length(consensus_growth)),
+    Kinetic_Status = character(length(consensus_growth)),
+    stringsAsFactors = FALSE
+  )
+  
+  for(i in 1:length(consensus_growth)) {
+    tax <- consensus_growth[i]
+    values <- abs_m_report[, tax]
+    
+    # Calculate Velocity and Acceleration
+    vel <- diff(values)
+    acc <- diff(vel)
+    last_acc <- acc[length(acc)]
+    
+    diag_summary$Total_Increase[i] <- round(values[n_s] / values[1], 2)
+    diag_summary$Final_Accel[i] <- round(last_acc, 4)
+    
+    # KINETIC FLAG LOGIC:
+    # Pos Accel = Active/Exponential Growth
+    # Neg Accel = Passive/Saturation/Residue
+    diag_summary$Kinetic_Status[i] <- ifelse(last_acc > 0, 
+                                             "ACTIVE (Accelerating)", 
+                                             "PASSIVE (Saturating/Residue)")
+  }
+
+  cat("\n==========================================================\n")
+  cat("   ITAGAKI V10600.0: KINETIC STATUS FINAL REPORT\n")
+  cat("==========================================================\n")
+  print(diag_summary, row.names = FALSE)
+  cat("----------------------------------------------------------\n")
+  cat("NOTE: 'ACTIVE' indicates self-driven physical expansion.\n")
+  cat("      'PASSIVE' suggests relative survival or peak saturation.\n")
+  cat("==========================================================\n")
+}
