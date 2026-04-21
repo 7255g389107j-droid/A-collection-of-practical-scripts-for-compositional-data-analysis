@@ -60,8 +60,9 @@ itagaki_trajectory_v25 <- function(Dataset, Group_Labels, Subject_IDs) {
 
 # --- USAGE EXAMPLE ---
 # Dataset: 30 rows (10 subjects x 3 timepoints)
- Subject_IDs <- rep(paste0("Subj_", 1:10), each = 3)
- Group_Labels <- rep(c("Point 0", "Point 1", "Point 2"), 10)
+
+ Subject_IDs <- rep(paste0("Subj_", 1:10), each = 4)
+ Group_Labels <- rep(c("Point 1", "Point 2", "Point 3", "Point 4"), 10)
  results <- itagaki_trajectory_v25(Dataset, Group_Labels, Subject_IDs)
  my_rot <- results$pca$rotation
  head(my_rot[order(abs(my_rot[, "PC1"]), decreasing = TRUE), 1:2], 10)
