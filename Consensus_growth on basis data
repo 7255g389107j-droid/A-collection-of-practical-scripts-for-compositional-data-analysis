@@ -198,69 +198,69 @@ if(length(consensus_growth) > 0) {
   }
 }
 
-# --- [8. ENHANCED VISUALIZATION: PHASE & LAG] ---
-if(length(consensus_growth) > 0 && nrow(causal_links) > 0) {
-  # Select Top 3 followers for visualization
-  top_followers <- head(causal_links$Taxon, 3)
+# --- [8. ENHANCED VISUALIZATION: Z-SCORE & COLLISION-FREE] ---
+if(length(consensus_growth) > 0) {
+  abs_m_kinetic <- sweep(d_m, 1, centroid_result$sf, "*")
   
   for(target_x in consensus_growth) {
-    for(target_y in top_followers) {
-      
-      # Prepare Lagged Data (X at t-1 vs Y at t)
-      x_lag <- abs_m_kinetic[1:(n_s-1), target_x]
-      y_now <- abs_m_kinetic[2:n_s, target_y]
-      time_axis <- 2:n_s
-      
-      # Create Plotting Window
-      dev.new(width=14, height=6)
-      
-      # MARGIN ADJUSTMENT:
-      # mar = c(bottom, left, top, right). Increased left/right to 8 to prevent overlap.
-      # mgp = c(label, tick_mark_labels, tick_marks). Adjusted for clarity.
-      par(mfrow=c(1, 2), mar=c(5, 8, 4, 8), mgp=c(4, 1, 0))
-      
-      # --- Plot A: Time-Lag Overlay ---
-      # Primary Axis (Left): Follower Y
-      plot(time_axis, y_now, type="b", pch=16, col="blue", lwd=2,
-           xlab="Time Index", ylab="", # Suppress default ylab to use mtext
-           main=paste("Time-Lag Overlay\n(X shifted +1 to match Y)"), 
-           las=1, cex.axis=0.8)
-      
-      # Offset Y-axis label to the left (line=5) to avoid digit overlap
-      mtext(paste("Follower (Y):", target_y), side=2, line=5, col="blue", font=2)
-      
-      # Secondary Axis (Right): Driver X
-      par(new=TRUE)
-      plot(time_axis, x_lag, type="b", pch=17, col="red", lty=2, lwd=2,
-           axes=FALSE, xlab="", ylab="")
-      
-      # Axis 4 is the right side. Offset label to the right (line=5)
-      axis(side=4, las=1, col.axis="red", cex.axis=0.8)
-      mtext(paste("Driver (X):", target_x), side=4, line=5, col="red", font=2)
-      
-      legend("topleft", legend=c("Follower (Current Y)", "Driver (Lagged X)"),
-             col=c("blue", "red"), lty=c(1, 2), pch=c(16, 17), bty="n", cex=0.7)
-      
-      # --- Plot B: Causal Scatter Plot ---
-      # Plot X(t-1) vs Y(t) to show predictive power
-      plot(x_lag, y_now, pch=16, col="darkgray",
-           xlab=paste("Driver Value at t-1 (", target_x, ")"),
-           ylab="", # Suppress default ylab
-           main="Causal Correlation", las=1, cex.axis=0.8)
-      
-      # Offset Y-axis label to the left
-      mtext(paste("Follower Value at t (", target_y, ")"), side=2, line=5, font=2)
-      
-      abline(lm(y_now ~ x_lag), col="red", lwd=2)
-      grid(col="gray90")
-      
-      # Display Correlation Coefficient
-      r_val <- cor(x_lag, y_now)
-      text(min(x_lag), max(y_now), labels=paste("Pearson's r =", round(r_val, 4)), 
-           pos=4, font=2, cex=0.8, col="red")
+    x_lagged <- abs_m_kinetic[1:(n_s-1), target_x]
+    # Z-score normalization for pure pattern matching
+    x_z <- (x_lagged - mean(x_lagged)) / sd(x_lagged)
+    
+    causal_links <- data.frame(Taxon=character(), Lag_Corr=numeric(), stringsAsFactors=FALSE)
+    for(tax_y in t_names) {
+      if(tax_y == target_x) next
+      y_current <- abs_m_kinetic[2:n_s, tax_y]
+      if(sd(y_current) > 0) {
+        l_corr <- cor(x_lagged, y_current)
+        if(!is.na(l_corr) && l_corr > 0.7) {
+          causal_links <- rbind(causal_links, data.frame(Taxon=tax_y, Lag_Corr=l_corr))
+        }
+      }
+    }
+
+    if(nrow(causal_links) > 0) {
+      causal_links <- causal_links[order(-causal_links$Lag_Corr), ]
+      for(target_y in causal_links$Taxon) {
+        y_now <- abs_m_kinetic[2:n_s, target_y]
+        y_z <- (y_now - mean(y_now)) / sd(y_now)
+        
+        dev.new(width=16, height=7)
+        # mar: Increase left margin (12) for long labels/high digits
+        # mgp: Shift axis title (5) and labels (1) away from ticks
+        par(mfrow=c(1, 2), mar=c(5, 12, 5, 5), mgp=c(4, 1, 0), bg="#FDFDFD")
+        
+        # --- Plot A: Pattern Overlay (Z-score) ---
+        plot(2:n_s, y_z, type="b", pch=16, col="blue", lwd=2,
+             xlab="Time Index", ylab="", 
+             main=paste("Temporal Pattern Match\n", target_y), 
+             las=1, cex.axis=0.8, ylim=range(c(x_z, y_z)))
+        lines(2:n_s, x_z, type="b", pch=17, col="red", lty=2, lwd=2)
+        
+        # Force label to the far left (line=8) to avoid collisions
+        mtext("Standardized Variation (Z)", side=2, line=8, font=2, cex=0.8)
+        grid(col="gray85")
+        legend("topleft", legend=c("Follower (Y)", "Driver (Lagged X)"),
+               col=c("blue", "red"), lty=c(1, 2), pch=c(16, 17), bty="n", cex=0.7)
+        
+        # --- Plot B: Original Scale Scatter ---
+        plot(x_lagged, y_now, pch=16, col="darkgray",
+             xlab=paste("Driver (t-1):", target_x), ylab="",
+             main="Causal Predictive Power", las=1, cex.axis=0.8)
+        
+        # Same offset for scatter plot consistency
+        mtext(paste("Follower (t):", target_y), side=2, line=8, font=2, cex=0.7)
+        abline(lm(y_now ~ x_lagged), col="red", lwd=2)
+        grid(col="gray85")
+        
+        r_val <- cor(x_lagged, y_now)
+        legend("bottomright", legend=paste("r =", round(r_val, 4)), 
+               text.col="red", bty="n", cex=1, text.font=2)
+      }
     }
   }
 }
+
 
 if(length(consensus_growth) > 0) {
   
