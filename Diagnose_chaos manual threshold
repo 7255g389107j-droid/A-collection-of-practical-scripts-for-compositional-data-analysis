@@ -101,5 +101,3 @@ diagnose_chaos_v8 <- function(Dataset) {
 
 result <- diagnose_chaos_v8(Dataset)
 
-# --- USAGE ---
-# result <- diagnose_chaos_v8(Dataset = Your_Proportion_Matrix)
