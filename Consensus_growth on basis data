@@ -306,3 +306,35 @@ if(length(consensus_growth) > 0) {
   cat("      'PASSIVE' suggests relative survival or peak saturation.\n")
   cat("==========================================================\n")
 }
+
+# =================================================================
+# SECTION 9: OPERATIONAL CAUTION & INTERPRETATION PROTOCOL
+# =================================================================
+cat("\n\n")
+cat("###########################################################\n")
+cat("#         CRITICAL OPERATIONAL CAUTION (V10600.0)         #\n")
+cat("###########################################################\n")
+cat("\n")
+cat("[1. KINETIC RELIABILITY]\n")
+cat(" - The 'ACTIVE/PASSIVE' status in Section 7 is a mathematical \n")
+cat("   interpretation of curvature (2nd derivative). \n")
+cat(" - If sampling intervals (dt) are NOT aligned with biological \n")
+cat("   growth rates, these labels reflect geometric artifacts \n")
+cat("   rather than true physiological states.\n\n")
+
+cat("[2. CAUSALITY VS. CORRELATION]\n")
+cat(" - Lag-Lead Analysis (Section 7-B) detects temporal sequence.\n")
+cat(" - High correlation DOES NOT prove biological causality.\n")
+cat(" - Results may be driven by latent environmental variables \n")
+cat("   acting sequentially on different components.\n\n")
+
+cat("[3. SENSITIVITY WARNING]\n")
+cat(" - Sections 1-5 (SNR/Triangulation) are HIGHLY ROBUST for \n")
+cat("   identifying absolute growth.\n")
+cat(" - Section 7 is HIGHLY SENSITIVE to measurement noise and \n")
+cat("   outliers. Use these results as 'Hypothesis Only'.\n\n")
+
+cat("-----------------------------------------------------------\n")
+cat("RECOMMENDATION: Prioritize SECTION 5 for final conclusions.\n")
+cat("Use SECTION 7 only for discovery and lead generation.\n")
+cat("###########################################################\n")
