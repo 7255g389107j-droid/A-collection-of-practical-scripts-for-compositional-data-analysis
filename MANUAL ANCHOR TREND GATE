@@ -119,3 +119,95 @@ cat("----------------------------------------------------------\n")
 cat("VERIFIED MONOTONIC GROWTH (Passed Manual Anchor + Centroid + LOO):\n")
 if(length(consensus_growth) > 0) print(consensus_growth) else cat("NONE DETECTED\n")
 cat("==========================================================\n")
+
+if(length(consensus_growth) > 0) {
+  cat("\n[INITIATING KINETIC & CAUSAL ANALYSIS PHASE]\n")
+  
+  # Use Geometric Centroid Basis for Kinetic Reconstruction
+  abs_m_kinetic <- sweep(d_m, 1, centroid_result$sf, "*")
+  
+  for(target_x in consensus_growth) {
+    cat(sprintf("\n>>> ANALYZING DYNAMICS DRIVEN BY: %s\n", target_x))
+    
+    # --- 7. ACCELERATION PROFILE (PHASE DIAGNOSIS) ---
+    # Velocity (1st Deriv) and Acceleration (2nd Deriv)
+    vel <- diff(abs_m_kinetic[, target_x])
+    acc <- diff(vel)
+    last_acc <- acc[length(acc)]
+    
+    # Kinetic Status Determination
+    # ACTIVE: Accelerating (Self-driven growth)
+    # PASSIVE: Saturating or relative residue
+    kinetic_status <- ifelse(last_acc > 0, "ACTIVE (Accelerating)", "PASSIVE (Saturating/Residue)")
+    cat(sprintf(" - Kinetic Status: %s (Accel Value: %.4f)\n", kinetic_status, last_acc))
+    
+    # --- 8. TARGETED LAG-LEAD CAUSALITY (1 vs N) ---
+    # Search for taxa that follow X with a time lag (X_t-1 -> Y_t)
+    causal_links <- data.frame(Taxon=character(), Lag_Corr=numeric(), stringsAsFactors=FALSE)
+    x_lagged <- abs_m_kinetic[1:(n_s-1), target_x]
+    
+    for(tax_y in t_names) {
+      if(tax_y == target_x) next
+      y_current <- abs_m_kinetic[2:n_s, tax_y]
+      
+      if(sd(y_current) > 0) {
+        l_corr <- cor(x_lagged, y_current)
+        # Threshold 0.8 for high-confidence followers
+        if(!is.na(l_corr) && l_corr > 0.8) {
+          causal_links <- rbind(causal_links, data.frame(Taxon=tax_y, Lag_Corr=l_corr))
+        }
+      }
+    }
+    
+    # Sort and Display Top Followers
+    if(nrow(causal_links) > 0) {
+      causal_links <- causal_links[order(-causal_links$Lag_Corr), ]
+      cat(" - Top Lag-Followers (X -> Y Directionality):\n")
+      print(head(causal_links, 5), row.names = FALSE)
+      
+      # --- 9. VISUAL CAUSALITY PROOF (MARGIN-ADJUSTED) ---
+      top_followers <- head(causal_links$Taxon, 3)
+      for(target_y in top_followers) {
+        y_now <- abs_m_kinetic[2:n_s, target_y]
+        time_axis <- 2:n_s
+        
+        dev.new(width=14, height=6)
+        # mar=c(bottom, left, top, right). 
+        # Large margins (8) prevent overlap with high-magnitude digits.
+        par(mfrow=c(1, 2), mar=c(5, 8, 4, 8), mgp=c(4, 1, 0))
+        
+        # Plot A: Time-Lag Overlay
+        plot(time_axis, y_now, type="b", pch=16, col="blue", lwd=2,
+             xlab="Time Index", ylab="", # Use mtext for ylab
+             main=paste("Time-Lag Overlay\n(", target_x, " leads ", target_y, ")"), 
+             las=1, cex.axis=0.8)
+        mtext(paste("Follower (Y):", target_y), side=2, line=5, col="blue", font=2)
+        
+        par(new=TRUE)
+        plot(time_axis, x_lagged, type="b", pch=17, col="red", lty=2, lwd=2,
+             axes=FALSE, xlab="", ylab="")
+        axis(side=4, las=1, col.axis="red", cex.axis=0.8)
+        mtext(paste("Driver (Lagged X):", target_x), side=4, line=5, col="red", font=2)
+        
+        legend("topleft", legend=c("Current Follower (Y)", "Lagged Driver (X)"),
+               col=c("blue", "red"), lty=c(1, 2), pch=c(16, 17), bty="n", cex=0.7)
+        
+        # Plot B: Causal Scatter Plot
+        plot(x_lagged, y_now, pch=16, col="darkgray",
+             xlab=paste("Driver Value at t-1 (", target_x, ")"),
+             ylab="", main="Causal Correlation (X_t-1 vs Y_t)", las=1, cex.axis=0.8)
+        mtext(paste("Follower Value at t (", target_y, ")"), side=2, line=5, font=2)
+        abline(lm(y_now ~ x_lagged), col="red", lwd=2)
+        grid(col="gray90")
+        
+        r_val <- cor(x_lagged, y_now)
+        text(min(x_lagged), max(y_now), labels=paste("Pearson's r =", round(r_val, 4)), 
+             pos=4, font=2, cex=0.9, col="red")
+      }
+    } else {
+      cat(" - No clear lag-followers detected for this driver.\n")
+    }
+  }
+} else {
+  cat("\n[TERMINATED]: No consensus growth detected. Causal analysis skipped.\n")
+}
