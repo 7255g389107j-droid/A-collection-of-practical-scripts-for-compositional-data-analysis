@@ -123,5 +123,3 @@ analyze_subcompositional_coherence <- function(Dataset,
 
 result <- analyze_subcompositional_coherence(Dataset, drop_ratio = 0.10)
 
-# --- EXAMPLE EXECUTION ---
-# result <- analyze_subcompositional_coherence(Dataset, drop_ratio = 0.10)
