@@ -109,38 +109,40 @@ diag_df <- data.frame(
 print(diag_df, row.names = FALSE)
 cat("==========================================================\n")
 
-# --- [6. VISUALIZATION OF SUCCESSFUL RECONSTRUCTION] ---
+# --- [6. VISUALIZATION OF SUCCESSFUL RECONSTRUCTION: ANTI-COLLISION VERSION] ---
 if(length(consensus_growth) > 0) {
-  # Increased window width for better multi-panel spacing
-  dev.new(width=22, height=8)
+  dev.new(width=22, height=9) # Increased height to accommodate anchor labels
   
   # MARGIN CONFIGURATION:
-  # mar: Increased left margin to 15 to accommodate long taxon names
-  # mgp: Adjusted to move axis labels further out to prevent digit overlap
-  par(mfrow=c(1, 4), mar=c(5, 15, 5, 2), mgp=c(4, 1, 0), bg="#FDFDFD")
+  # mar: Increased top margin (7) to prevent anchor name from being cut off.
+  # left margin (15) remains for long taxon names.
+  par(mfrow = c(1, 4), mar = c(5, 15, 7, 2), mgp = c(4, 1, 0), bg = "#FDFDFD")
   
   cols <- rainbow(length(consensus_growth))
   
   for(i in 1:4) {
-    abs_v <- sweep(d_m[, consensus_growth, drop=FALSE], 1, plot_list[[i]]$sf, "*")
+    abs_v <- sweep(d_m[, consensus_growth, drop = FALSE], 1, plot_list[[i]]$sf, "*")
     
-    # matplot: Main trajectory plot without default ylab
-    matplot(abs_v, type="b", pch=16, lty=1, lwd=2, col=cols,
-            main=paste("Anchor:", plot_list[[i]]$name), 
-            ylab="", xlab="Sample Index", las=1, cex.axis=0.8)
+    # matplot: Increased ylim slightly to create vertical room for labels
+    y_range <- range(abs_v)
+    matplot(abs_v, type = "b", pch = 16, lty = 1, lwd = 2, col = cols,
+            main = "", ylab = "", xlab = "Sample Index", las = 1, cex.axis = 0.8,
+            ylim = c(y_range[1], y_range[2] * 1.1))
     
-    # Secondary Labeling: 
-    # Offset the main Y-axis title significantly (line=12) to stay outside the digits
-    mtext("Abs Mass Scale (Rel. to S1)", side=2, line=12, cex=0.8, font=2)
+    # ANCHOR LABEL: Positioned at line 4 (top) to prevent cutoff
+    mtext(paste("Anchor:", plot_list[[i]]$name), side = 3, line = 4, font = 2, cex = 0.9)
     
-    grid(col="gray80")
+    # AXIS TITLE: Offset significantly to avoid high-magnitude digit overlap
+    mtext("Abs Mass Scale (Rel. to S1)", side = 2, line = 12, cex = 0.8, font = 2)
     
-    # TAXA LABELLING (Anti-Collision):
-    # offset=5 pushes the labels into the extended margin area
-    # xpd=TRUE allows drawing outside the standard plot clipping region
+    grid(col = "gray80")
+    
+    # TAXA LABELLING with ANTI-COLLISION JITTER:
+    # Adding a small vertical offset (jitter) based on index 'j' to prevent label overlap
     for(j in 1:length(consensus_growth)) {
-      text(1, abs_v[1, j], labels=consensus_growth[j], 
-           pos=2, offset=5, cex=0.7, col=cols[j], xpd=TRUE, font=2)
+      v_offset <- (j %% 3 - 1) * (diff(y_range) * 0.02) # Subtle vertical shift
+      text(1, abs_v[1, j] + v_offset, labels = consensus_growth[j], 
+           pos = 2, offset = 5, cex = 0.7, col = cols[j], xpd = TRUE, font = 2)
     }
   }
 }
