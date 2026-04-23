@@ -40,7 +40,7 @@ y_lim <- range(c(S[,2], L_top[,2]*mult)) * 2.0
 
 par(mar = c(5, 6, 5, 5), bg = "#FDFDFD", las = 1)
 plot(S[, 1:2], pch = 21, bg = "#BDC3C7", col = "#7F8C8D", cex = 1.5,
-     xlab = paste0("PC1 (", pc1_v, "%)"), ylab = paste0("PC2 (", pc2_v, "%)"),
+     xlab = paste0("PC1 (", pc1_v, "%): Structural Shift"), ylab = paste0("PC2 (", pc2_v, "%): Underlying Trend"),
      main = "Aitchison Biplot: Anti-Collision Mode", xlim = x_lim, ylim = y_lim)
 
 grid(col = "#ECF0F1", lty = 1)
@@ -73,3 +73,54 @@ for(i in 1:nrow(L_top)) {
 }
 
 lines(S[, 1], S[, 2], col = "#3498DB", lty = 3, lwd = 1.5)
+
+# --- 7. EXPORT TO PDF ---
+# Define the filename and dimensions (inches)
+file_name <- "Aitchison_Biplot_Output.pdf"
+
+# Start the PDF device
+pdf(file = file_name, width = 10, height = 8, family = "sans")
+
+# ---  PLOT INITIALIZATION ---
+mult <- min((max(S[,1])-min(S[,1]))/max(L_top[,1]), (max(S[,2])-min(S[,2]))/max(L_top[,2])) * arrow_scale
+x_lim <- range(c(S[,1], L_top[,1]*mult)) * 2.0 
+y_lim <- range(c(S[,2], L_top[,2]*mult)) * 2.0
+
+par(mar = c(5, 6, 5, 5), bg = "#FDFDFD", las = 1)
+plot(S[, 1:2], pch = 21, bg = "#BDC3C7", col = "#7F8C8D", cex = 1.5,
+     xlab = paste0("PC1 (", pc1_v, "%): Structural Shift"), ylab = paste0("PC2 (", pc2_v, "%): Underlying Trend"),
+     main = "Aitchison Biplot: Anti-Collision Mode", xlim = x_lim, ylim = y_lim)
+
+grid(col = "#ECF0F1", lty = 1)
+abline(h = 0, v = 0, lty = 2, col = "#95A5A6")
+
+# ---  LABELLING & VECTORS ---
+text(S[, 1], S[, 2], labels = rownames(S), pos = 3, offset = 0.5, cex = sample_cex, font = 2)
+arrows(0, 0, L_top[, 1] * mult, L_top[, 2] * mult, col = "#E74C3C", lwd = 2.5, length = 0.1)
+
+# ---  ZIG-ZAG LABEL PLACEMENT ---
+for(i in 1:nrow(L_top)) {
+  tx <- L_top[i, 1] * mult
+  ty <- L_top[i, 2] * mult
+  deg <- atan2(ty, tx) * 180 / pi
+  
+  # Radial Staggering: Alternates distance for every other label
+  dynamic_dist <- ifelse(i %% 2 == 0, base_dist, base_dist + 0.25)
+  
+  # Vertical Jittering: Displaces labels into 3 distinct vertical planes
+  y_jit <- ifelse(i %% 3 == 0, jitter_y_amp * diff(y_lim), 
+           ifelse(i %% 3 == 1, -jitter_y_amp * diff(y_lim), 0))
+  
+  d_pos <- ifelse(deg > -45 && deg <= 45, 4,
+           ifelse(deg > 45 && deg <= 135, 3,
+           ifelse(deg > -135 && deg <= -45, 1, 2)))
+  
+  text(tx * dynamic_dist, ty * dynamic_dist + y_jit, 
+       labels = rownames(L_top)[i], pos = d_pos, 
+       cex = load_cex, col = "#2C3E50", font = 2, xpd = TRUE)
+
+# Close the device and save the file
+dev.off()
+
+# Print confirmation
+message(paste("Successfully saved to:", getwd(), "/", file_name, sep=""))
