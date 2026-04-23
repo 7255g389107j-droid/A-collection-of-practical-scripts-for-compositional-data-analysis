@@ -109,3 +109,67 @@ results
 S
 scaled_L
 L_top
+
+# --- 10. EXPORT TO PDF ---
+# Define the filename and dimensions (inches)
+file_name <- "Aitchison_Biplot_Output.pdf"
+
+# Start the PDF device
+pdf(file = file_name, width = 10, height = 8, family = "sans")
+
+# ---  PLOT INITIALIZATION ---
+par(mar = c(5, 6, 5, 5), bg = "#FDFDFD", las = 1)
+plot(S[, 1:2], pch = 21, bg = "#BDC3C7", col = "#7F8C8D", cex = 1.8,
+     xlab = paste0("PC1 (", pc1_v, "%): Structural Shift"), 
+     ylab = paste0("PC2 (", pc2_v, "%): Underlying Trend"),
+     main = "Biplot (Zero-Overlap)",
+     xlim = x_lim, ylim = y_lim)
+
+grid(col = "#ECF0F1", lty = 1)
+abline(h = 0, v = 0, lty = 2, col = "#95A5A6")
+
+# ---  SAMPLE LABELLING (FORCED) ---
+# Display Sample IDs (1, 2, 3, 4...) with bold font
+text(S[, 1], S[, 2], labels = rownames(S), pos = 3, offset = 0.8, cex = sample_cex, font = 2, col = "black")
+
+# ---  SCALED LOADING VECTORS ---
+arrows(0, 0, L_top[, 1] * mult, L_top[, 2] * mult, col = "#E74C3C", lwd = 3, length = 0.15)
+
+# ---  ZIG-ZAG ANTI-COLLISION LABELLING ---
+# Logic: Alternate offset distances and vertical positions based on index i
+for(i in 1:nrow(L_top)) {
+  tx <- L_top[i, 1] * mult
+  ty <- L_top[i, 2] * mult
+  
+  # Calculate base radial position
+  angle <- atan2(ty, tx)
+  deg   <- angle * 180 / pi
+  
+  # ZIG-ZAG LOGIC: Alternate radial distance to prevent names from clumping
+  # Every second label is pushed further out
+  dynamic_dist <- ifelse(i %% 2 == 0, base_dist, base_dist + 0.15)
+  
+  # VERTICAL JITTER: Alternate slight Y-shifts
+  y_jit <- ifelse(i %% 3 == 0, jitter_y_amp * diff(y_lim), 
+           ifelse(i %% 3 == 1, -jitter_y_amp * diff(y_lim), 0))
+  
+  # Determine text position index (1:Bottom, 2:Left, 3:Top, 4:Right)
+  d_pos <- ifelse(deg > -45 && deg <= 45, 4,
+           ifelse(deg > 45 && deg <= 135, 3,
+           ifelse(deg > -135 && deg <= -45, 1, 2)))
+  
+  # Plot Label with dynamic offset
+  text(tx * dynamic_dist, ty * dynamic_dist + y_jit, 
+       labels = rownames(L_top)[i], pos = d_pos, 
+       cex = load_cex, col = "#2C3E50", font = 2, xpd = TRUE)
+}
+
+# ---  CHRONOLOGICAL TRAJECTORY ---
+lines(S[, 1], S[, 2], col = "#3498DB", lty = 3, lwd = 2)
+
+
+# Close the device and save the file
+dev.off()
+
+# Print confirmation
+message(paste("Successfully saved to:", getwd(), "/", file_name, sep=""))
