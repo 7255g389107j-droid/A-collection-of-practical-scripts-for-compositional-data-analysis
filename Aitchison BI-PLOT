@@ -55,7 +55,7 @@ par(mar = c(5, 6, 5, 5), bg = "#FDFDFD", las = 1)
 plot(S[, 1:2], pch = 21, bg = "#BDC3C7", col = "#7F8C8D", cex = 1.8,
      xlab = paste0("PC1 (", pc1_v, "%): Structural Shift"), 
      ylab = paste0("PC2 (", pc2_v, "%): Underlying Trend"),
-     main = "Biplot (Zero-Overlap)",
+     main = "Aitchison BI-PLOT",
      xlim = x_lim, ylim = y_lim)
 
 grid(col = "#ECF0F1", lty = 1)
