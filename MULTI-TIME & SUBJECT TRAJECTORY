@@ -59,7 +59,7 @@ itagaki_trajectory_v25 <- function(Dataset, Group_Labels, Subject_IDs) {
 }
 
 # --- USAGE EXAMPLE ---
-# Dataset: 30 rows (10 subjects x 3 timepoints)
+# Dataset: 40 rows (10 subjects x 4 timepoints)
 
  Subject_IDs <- rep(paste0("Subj_", 1:10), each = 4)
  Group_Labels <- rep(c("Point 1", "Point 2", "Point 3", "Point 4"), 10)
