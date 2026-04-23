@@ -212,3 +212,52 @@ if(length(consensus_growth) > 0) {
 dev.off()
 
 cat(paste0("\n--- EXPORT COMPLETE ---\nFile: ", getwd(), "/", file_out, "\n"))
+
+# =================================================================
+# ITAGAKI-SYSTEM V10400.0: LABEL COLLISION FIX
+# -----------------------------------------------------------------
+# Adjusting left margin and label offset for high-magnitude values
+# =================================================================
+
+file_out <- "Figure_Quantitative_Reconstruction_Fixed.pdf"
+pdf(file = file_out, width = 16, height = 8, useDingbats = FALSE)
+
+if(length(consensus_growth) > 0) {
+  
+  # INCREASED LEFT MARGIN: mar[2] changed from 5 to 10
+  # mar: c(bottom, left, top, right)
+  par(mfrow = c(1, 4), mar = c(5, 10, 6, 12), mgp = c(3, 1, 0), bg = "white")
+  
+  line_cols <- rainbow(length(consensus_growth), s = 0.7, v = 0.8)
+  
+  for(i in 1:4) {
+    abs_v <- sweep(d_m[, consensus_growth, drop = FALSE], 1, plot_list[[i]]$sf, "*")
+    y_lims <- range(abs_v)
+    
+    matplot(abs_v, type = "b", 
+            pch = 21, bg = "white", lty = 1, lwd = 1.5, col = line_cols,
+            main = "", ylab = "", xlab = "Sample Index", 
+            las = 1,      # las=1 keeps axis numbers horizontal
+            cex.axis = 1.1, 
+            ylim = c(y_lims[1], y_lims[2] * 1.05),
+            bty = "l")
+    
+    mtext(LETTERS[i], side = 3, line = 3, adj = -0.2, cex = 1.8, font = 2)
+    mtext(paste0("Basis: ", plot_list[[i]]$name), side = 3, line = 2, font = 2, cex = 0.9)
+    
+    # FIXED: Pushed Y-axis label further to the left (line = 7)
+    # Increase this value if numbers are still overlapping
+    mtext("Estimated Absolute Scale", side = 2, line = 7, cex = 1.1, font = 2)
+    
+    grid(nx = NA, ny = NULL, col = "gray92", lty = "solid")
+    
+    for(j in 1:length(consensus_growth)) {
+      text(x = n_s, y = abs_v[n_s, j], 
+           labels = consensus_growth[j], 
+           pos = 4, offset = 0.8, cex = 0.85, 
+           col = line_cols[j], xpd = TRUE, font = 3)
+    }
+  }
+}
+dev.off()
+
