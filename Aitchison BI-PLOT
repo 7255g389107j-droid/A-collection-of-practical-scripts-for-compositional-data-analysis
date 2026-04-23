@@ -83,8 +83,9 @@ for(i in 1:nrow(L_top)) {
   dynamic_dist <- ifelse(i %% 2 == 0, base_dist, base_dist + 0.15)
   
   # VERTICAL JITTER: Alternate slight Y-shifts
+  # If ingredient names overlap, adjust by multiplying by 1.1 or more
   y_jit <- ifelse(i %% 3 == 0, jitter_y_amp * diff(y_lim), 
-           ifelse(i %% 3 == 1, -jitter_y_amp * diff(y_lim), 0))
+           ifelse(i %% 3 == 1, -jitter_y_amp * diff(y_lim), 0)) 
   
   # Determine text position index (1:Bottom, 2:Left, 3:Top, 4:Right)
   d_pos <- ifelse(deg > -45 && deg <= 45, 4,
@@ -150,6 +151,7 @@ for(i in 1:nrow(L_top)) {
   dynamic_dist <- ifelse(i %% 2 == 0, base_dist, base_dist + 0.15)
   
   # VERTICAL JITTER: Alternate slight Y-shifts
+  # If ingredient names overlap, adjust by multiplying by 1.1 or more
   y_jit <- ifelse(i %% 3 == 0, jitter_y_amp * diff(y_lim), 
            ifelse(i %% 3 == 1, -jitter_y_amp * diff(y_lim), 0))
   
