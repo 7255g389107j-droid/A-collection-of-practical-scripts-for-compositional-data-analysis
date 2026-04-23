@@ -146,3 +146,69 @@ if(length(consensus_growth) > 0) {
     }
   }
 }
+
+# -----------------------------------------------------------------
+# Target: High-Resolution PDF for Journal Submission
+# Features: Right-aligned labels, Italicized Taxa, Panel Indexing
+# =================================================================
+
+# --- [PDF CONFIGURATION] ---
+# A4 landscape width (approx. 16 inches) for 4-panel layout
+file_out <- "Figure_Quantitative_Reconstruction.pdf"
+pdf(file = file_out, width = 16, height = 8, useDingbats = FALSE)
+
+if(length(consensus_growth) > 0) {
+  
+  # Global graphical parameters: 
+  # mar: c(bottom, left, top, right). Large right margin (12) for labels.
+  par(mfrow = c(1, 4), mar = c(5, 5, 6, 12), mgp = c(3, 1, 0), bg = "white")
+  
+  # Professional color palette
+  line_cols <- rainbow(length(consensus_growth), s = 0.7, v = 0.8)
+  
+  for(i in 1:4) {
+    # Extract reconstructed absolute values for the current basis
+    abs_v <- sweep(d_m[, consensus_growth, drop = FALSE], 1, plot_list[[i]]$sf, "*")
+    y_lims <- range(abs_v)
+    
+    # Generate Plot
+    matplot(abs_v, type = "b", 
+            pch = 21, bg = "white", lty = 1, lwd = 1.5, col = line_cols,
+            main = "", ylab = "", xlab = "Sample Index", 
+            las = 1, cex.axis = 1.1, 
+            ylim = c(y_lims[1], y_lims[2] * 1.05),
+            bty = "l") # Clean L-shaped frame
+    
+    # Panel Labeling (A, B, C, D)
+    mtext(LETTERS[i], side = 3, line = 3, adj = -0.2, cex = 1.8, font = 2)
+    
+    # Subtitle: Basis Identification
+    mtext(paste0("Basis: ", plot_list[[i]]$name), side = 3, line = 2, font = 2, cex = 0.9)
+    
+    # Y-axis Label
+    mtext("Estimated Absolute Scale", side = 2, line = 3, cex = 1, font = 2)
+    
+    grid(nx = NA, ny = NULL, col = "gray92", lty = "solid")
+    
+    # --- RIGHT-ALIGNED COMPONENT LABELS ---
+    # Labels are placed at the final sample point (n_s)
+    for(j in 1:length(consensus_growth)) {
+      text(x = n_s, y = abs_v[n_s, j], 
+           labels = consensus_growth[j], 
+           pos = 4,      # Position: Right
+           offset = 0.8, # Space between point and text
+           cex = 0.85, 
+           col = line_cols[j], 
+           xpd = TRUE,   # Draw outside plot region
+           font = 3)     # Italic for Scientific Names
+    }
+  }
+} else {
+  plot.new()
+  text(0.5, 0.5, "No Consensus Growth Detected under current SNR/Pass-Limit settings.")
+}
+
+# Close device
+dev.off()
+
+cat(paste0("\n--- EXPORT COMPLETE ---\nFile: ", getwd(), "/", file_out, "\n"))
