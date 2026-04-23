@@ -183,7 +183,7 @@ if(length(consensus_growth) > 0) {
     mtext(LETTERS[i], side = 3, line = 3, adj = -0.2, cex = 1.8, font = 2)
     
     # Subtitle: Basis Identification
-    mtext(paste0("Basis: ", plot_list[[i]]$name), side = 3, line = 2, font = 2, cex = 0.9)
+    mtext(paste0("Anchor: ", plot_list[[i]]$name), side = 3, line = 2, font = 2, cex = 0.9)
     
     # Y-axis Label
     mtext("Estimated Absolute Scale", side = 2, line = 3, cex = 1, font = 2)
