@@ -118,6 +118,8 @@ for(i in 1:nrow(L_top)) {
   text(tx * dynamic_dist, ty * dynamic_dist + y_jit, 
        labels = rownames(L_top)[i], pos = d_pos, 
        cex = load_cex, col = "#2C3E50", font = 2, xpd = TRUE)
+}
+lines(S[, 1], S[, 2], col = "#3498DB", lty = 3, lwd = 1.5)
 
 # Close the device and save the file
 dev.off()
