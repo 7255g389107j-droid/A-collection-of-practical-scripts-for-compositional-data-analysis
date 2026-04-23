@@ -1,0 +1,75 @@
+# =================================================================
+# ITAGAKI-SYSTEM V36.5: Aitchison BI-PLOT (Manual Selection (Additional Edition))
+# Feature: Manual Variable Selection & Advanced Anti-Collision
+# =================================================================
+
+# --- 0. DATA PREPARATION ---
+Dataset <- Dataset[, colSums(Dataset == 0) == 0]
+P_raw <- as.matrix(Dataset)
+
+# --- 1. CLR-PCA LOGIC ---
+P_core <- sweep(P_raw, 1, rowSums(P_raw), "/")
+clr_core <- sweep(log(P_core), 1, rowMeans(log(P_core)), "-")
+pca_res <- prcomp(clr_core, center = TRUE, scale. = FALSE)
+var_exp <- (pca_res$sdev^2) / sum(pca_res$sdev^2) * 100
+pc1_v <- round(var_exp[1], 1); pc2_v <- round(var_exp[2], 1)
+
+# --- 2. VARIABLE SELECTION (FORCED + TOP X) ---
+scaled_L <- sweep(pca_res$rotation, 2, pca_res$sdev, FUN = "*")
+
+# [EDIT HERE] Define specific columns you want to show
+forced_vars <- c("YourColumnName1", "YourColumnName2")  # Add YourColumnNames
+top_vars    <- rownames(scaled_L)[order(abs(scaled_L[, "PC1"]), decreasing = TRUE)[1:6]] # Top X
+
+# Combine and remove duplicates
+selected_vars <- unique(c(top_vars, forced_vars))
+L_top <- scaled_L[selected_vars, 1:2]
+S <- pca_res$x
+
+# --- 3. [FINE-TUNING PARAMETERS] ---
+arrow_scale  <- 0.80   # Shortened slightly to give labels more room
+base_dist    <- 1.25   # Increased distance from arrow tip
+jitter_y_amp <- 0.18   # Increased vertical spread to prevent overlap
+load_cex     <- 0.65   # Reduced font size for better clarity
+sample_cex   <- 1.0   
+
+# --- 4. PLOT INITIALIZATION ---
+mult <- min((max(S[,1])-min(S[,1]))/max(L_top[,1]), (max(S[,2])-min(S[,2]))/max(L_top[,2])) * arrow_scale
+x_lim <- range(c(S[,1], L_top[,1]*mult)) * 2.0 
+y_lim <- range(c(S[,2], L_top[,2]*mult)) * 2.0
+
+par(mar = c(5, 6, 5, 5), bg = "#FDFDFD", las = 1)
+plot(S[, 1:2], pch = 21, bg = "#BDC3C7", col = "#7F8C8D", cex = 1.5,
+     xlab = paste0("PC1 (", pc1_v, "%)"), ylab = paste0("PC2 (", pc2_v, "%)"),
+     main = "Aitchison Biplot: Anti-Collision Mode", xlim = x_lim, ylim = y_lim)
+
+grid(col = "#ECF0F1", lty = 1)
+abline(h = 0, v = 0, lty = 2, col = "#95A5A6")
+
+# --- 5. LABELLING & VECTORS ---
+text(S[, 1], S[, 2], labels = rownames(S), pos = 3, offset = 0.5, cex = sample_cex, font = 2)
+arrows(0, 0, L_top[, 1] * mult, L_top[, 2] * mult, col = "#E74C3C", lwd = 2.5, length = 0.1)
+
+# --- 6. ZIG-ZAG LABEL PLACEMENT ---
+for(i in 1:nrow(L_top)) {
+  tx <- L_top[i, 1] * mult
+  ty <- L_top[i, 2] * mult
+  deg <- atan2(ty, tx) * 180 / pi
+  
+  # Radial Staggering: Alternates distance for every other label
+  dynamic_dist <- ifelse(i %% 2 == 0, base_dist, base_dist + 0.25)
+  
+  # Vertical Jittering: Displaces labels into 3 distinct vertical planes
+  y_jit <- ifelse(i %% 3 == 0, jitter_y_amp * diff(y_lim), 
+           ifelse(i %% 3 == 1, -jitter_y_amp * diff(y_lim), 0))
+  
+  d_pos <- ifelse(deg > -45 && deg <= 45, 4,
+           ifelse(deg > 45 && deg <= 135, 3,
+           ifelse(deg > -135 && deg <= -45, 1, 2)))
+  
+  text(tx * dynamic_dist, ty * dynamic_dist + y_jit, 
+       labels = rownames(L_top)[i], pos = d_pos, 
+       cex = load_cex, col = "#2C3E50", font = 2, xpd = TRUE)
+}
+
+lines(S[, 1], S[, 2], col = "#3498DB", lty = 3, lwd = 1.5)
