@@ -20,6 +20,7 @@
 # --- [0. OPERATOR CONFIGURATION] ---
 manual_threshold <- 0.0001  # QC: Minimum physical abundance filter
 snr_sensitivity  <- 1.8     # SNR: Drift correction intensity, It would be best not to lower it any further.
+                            # Setting snr_sensitivity to 1.0e+31 negates the lag in the decrease.
 pass_snr_limit   <- 2.0    # Pass_SNR: Minimum total fold-increase, 1.2; change signs; 1.5; steady change; over 2.0 clear growth
 set.seed(42); n_boot <- 1000
 
