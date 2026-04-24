@@ -21,6 +21,7 @@
 # It is, in principle, impossible to infer information about one from information about the other.
 # The only conditions under which this works are when the error bars overlap the baseline (1) and no definitive conclusions can be drawn.
 # In other words, only data that shows little to no change is applicable.
+# If the error bar does not cross "1", this code is not working correctly.
 
 # --- 1. USER-DEFINED FILTERING & DYNAMIC SCALING ---
 set.seed(42) # For reproducibility
