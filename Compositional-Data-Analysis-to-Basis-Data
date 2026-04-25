@@ -137,3 +137,8 @@ cat("----------------------------------------------------------\n")
 cat(sprintf("PHYSICAL INVARIANCE CONFIDENCE: IR-Min = %.4f\n", min(m_global$ir)))
 cat(sprintf("DYNAMIC SCALE USED (EFF_LIB): %.2e\n", eff_lib))
 cat("==========================================================\n")
+
+# Check the maximum change in occupancy rate.
+max_diff <- apply(d_m, 2, function(x) max(x) - min(x))
+potential_dictator <- names(sort(max_diff, decreasing = TRUE)[1])
+cat("Most Volatile Candidate:", potential_dictator, "\n")
