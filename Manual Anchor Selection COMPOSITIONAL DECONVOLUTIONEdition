@@ -1,0 +1,128 @@
+# =================================================================
+# ULTIMATE COMPOSITIONAL DECONVOLUTION: OHTA-AITCHISON ENGINE (MANUAL MODE)
+# Methodology: Ohta (2011) + VLR-Purity + Dynamic Poisson Floor
+# Version: 2026.4.25 - Manual Anchor Selection Edition
+# Developed by: Tatsuki Itagaki
+# Copyright (c) 2026 Tatsuki Itagaki
+# License: MIT License (https://opensource.org)
+# 
+# ACADEMIC CITATION:
+# If you use this software or its logic in your research, 
+# please cite the following works:
+# Ohta, T. (2011). DOI: 10.1007/s11004-011-9332-y
+# Itagaki, T (2024). DOI: 10.3390/microorganisms12071484
+# Itagaki, T (2025). DOI: 10.3390/nu17233681
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.21953.93284
+# Itagaki, T (2026). DOI: 10.13140/RG.2.2.35015.25762
+# =================================================================
+
+# Absolute quantities and ratios each contain independent information and are, in principle, uncorrelated with one another.
+# It is, in principle, impossible to infer information about one from information about the other.
+# The only conditions under which this works are when the error bars overlap the baseline (1) and no definitive conclusions can be drawn.
+# In other words, only data that shows little to no change is applicable.
+# If the error bar does not cross "1", this code is not working correctly.
+
+# --- 0. PARAMETERS & INPUT ---
+set.seed(42)
+min_abundance_threshold <- 0.00001 
+
+# [INPUT] Ensure 'Dataset' is a Proportion Matrix (Rows=Samples, Cols=Taxa)
+raw_data <- as.matrix(Dataset)
+n_s <- nrow(raw_data)
+
+# --- 1. FILTERING & DYNAMIC SCALING ---
+valid_taxa_mask <- apply(raw_data, 2, function(x) all(x >= min_abundance_threshold))
+if(sum(valid_taxa_mask) < 2) stop("Too few taxa passed filtering. Check threshold.")
+
+d_m <- raw_data[, valid_taxa_mask, drop = FALSE]
+taxa_ids <- colnames(d_m)
+avg_min_val <- mean(apply(d_m, 2, min))
+eff_lib <- 1 / avg_min_val 
+
+# --- 2. THE TRIPLE-STABILITY CORE ENGINE ---
+get_metrics <- function(P) {
+  L <- log(P)
+  # [A] Physical: Invariance Ratio (IR) vs Dynamic Poisson Floor
+  obs_v <- apply(L, 2, var)
+  theo_v <- 1 / (colMeans(P) * eff_lib)
+  ir <- obs_v / theo_v
+  
+  # [B] Geometric: Purity Index (PI) via Variation Matrix
+  vlr <- var(L)
+  pi_s <- 1 / (apply(outer(obs_v, obs_v, "+") - 2 * vlr, 1, median))
+  
+  # [C] Statistical: Ohta's Win Count (CV-Asymmetry)
+  win <- numeric(ncol(P))
+  for (j in 1:ncol(P)) {
+    r <- P / P[, j]
+    win[j] <- sum(apply(r, 2, function(x) sd(x)/mean(x)) < 
+                  apply(1/r, 2, function(x) sd(x)/mean(x)), na.rm=TRUE)
+  }
+  return(list(ir=ir, pi=pi_s, win=win))
+}
+
+m_global <- get_metrics(d_m)
+sig_class <- ifelse(m_global$ir < 2.0, "PHYSICAL NOISE", 
+             ifelse(m_global$ir < 10.0, "PRACTICAL PROXY", "BIOLOGICAL SIGNAL"))
+
+# --- 3. ANCHOR RECOMMENDATION & MANUAL SELECTION ---
+recommendations <- data.frame(
+  Taxon = taxa_ids, 
+  IR = m_global$ir, 
+  PI = m_global$pi, 
+  Win = m_global$win,
+  Class = sig_class
+)
+recommendations <- recommendations[order(rank(recommendations$IR) + rank(-recommendations$PI)), ]
+
+cat("\n--- AUTOMATIC STABILITY RANKING (Top 10) ---\n")
+print(head(recommendations, 10))
+
+# [USER INPUT] Specify your manual anchor name here
+# Example: manual_anchor <- "Taxon_A"
+manual_anchor <- recommendations$Taxon[1] # Default: Best recommended
+
+if(!(manual_anchor %in% taxa_ids)) stop("Specified anchor not found in filtered data.")
+anchor_idx <- which(taxa_ids == manual_anchor)
+
+# --- 4. BOOTSTRAP FOR 95% CI (n=1000) ---
+n_boot <- 1000
+boot_sf <- matrix(NA, nrow=n_boot, ncol=n_s)
+
+for(b in 1:n_boot) {
+  idx <- sample(1:n_s, replace=TRUE)
+  full_sf <- 1 / d_m[, anchor_idx]
+  # Dynamic Normalization: Relative to the mean of the bootstrap sample
+  boot_sf[b, ] <- full_sf / mean(full_sf[idx])
+}
+
+# --- 5. VISUALIZATION OF MANUAL RECOVERY ---
+mu  <- apply(boot_sf, 2, mean)
+low <- apply(boot_sf, 2, quantile, probs=0.025)
+upp <- apply(boot_sf, 2, quantile, probs=0.975)
+
+dev.new(width=10, height=6)
+par(mar=c(6, 6, 5, 2))
+y_max <- max(upp) * 1.3
+bp <- barplot(mu, main=paste("Manual Deconvolution Anchor:", manual_anchor), 
+              col="#34495e", border=NA, ylim=c(0, y_max),
+              ylab="Absolute Scaling Factor (Mass Reconstruction)", 
+              xlab="Sample Index", names.arg=1:n_s, las=1)
+
+arrows(bp, low, bp, upp, angle=90, code=3, length=0.05, col="red", lwd=1.5)
+text(bp, upp, labels=round(mu, 2), pos=3, cex=0.8, col="black", font=2)
+abline(h=1, lty=2, col="gray")
+
+mtext(paste("Stability Class:", sig_class[anchor_idx], "| IR:", round(m_global$ir[anchor_idx], 3)), side=3, line=0.5)
+
+# --- 6. FINAL ANALYTICAL SUMMARY ---
+cat("\n==========================================================\n")
+cat("      DECONVOLUTION ENGINE: MANUAL ANCHOR SUMMARY         \n")
+cat("==========================================================\n")
+cat(sprintf("Selected Anchor:  %s\n", manual_anchor))
+cat(sprintf("Physical Status:  %s\n", sig_class[anchor_idx]))
+cat(sprintf("Invariance Ratio: %.4f\n", m_global$ir[anchor_idx]))
+cat(sprintf("95%% CI Logic:    %s\n", 
+    if(any(low <= 1 & upp >= 1)) "STABLE (Baseline Overlap)" else "SIGNAL DOMINANT"))
+cat("==========================================================\n")
+
