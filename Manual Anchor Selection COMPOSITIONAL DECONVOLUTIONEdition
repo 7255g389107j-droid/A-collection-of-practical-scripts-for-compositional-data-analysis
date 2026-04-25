@@ -132,3 +132,8 @@ cat(sprintf("95%% CI Logic:    %s\n",
         "RELIABLE (Baseline 1 is within CI - Consistent with stable anchor logic)"
     }))
 cat("==========================================================\n")
+
+# Check the maximum change in occupancy rate.
+max_diff <- apply(d_m, 2, function(x) max(x) - min(x))
+potential_dictator <- names(sort(max_diff, decreasing = TRUE)[1])
+cat("Most Volatile Candidate:", potential_dictator, "\n")
