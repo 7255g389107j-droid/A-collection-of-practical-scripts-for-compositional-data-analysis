@@ -42,7 +42,7 @@ get_metrics <- function(P) {
   return(list(pi = pi_s, ir = ir, g_center = rowMeans(L)))
 }
 metrics <- get_metrics(d_m)
-top_3_indices <- order(rank(-metrics$pi) + rank(metrics$ir))[1:3]
+top_3_indices <- order(rank(-metrics$pi) + rank(metrics$ir))[1:3] # top_X_indices <- order(rank(-metrics$pi) + rank(metrics$ir))[1:10] 
 
 # --- [3. QUANTITATIVE DIAGNOSTIC ENGINE] ---
 process_basis <- function(target_idx, is_centroid = FALSE) {
@@ -85,7 +85,7 @@ process_basis <- function(target_idx, is_centroid = FALSE) {
   return(list(sf = sf_locked, verified = verified_taxa, name = basis_name, snr = snr_values, mono = is_monotonic))
 }
 
-anchor_results <- lapply(top_3_indices, process_basis)
+anchor_results <- lapply(top_3_indices, process_basis) # If you use Top X: anchor_results <- lapply(top_X_indices, process_basis)
 centroid_result <- process_basis(NULL, is_centroid = TRUE)
 plot_list <- c(list(centroid_result), anchor_results)
 
