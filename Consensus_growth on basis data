@@ -84,7 +84,7 @@ process_basis <- function(target_idx, is_centroid = FALSE) {
 
 anchor_results <- lapply(top_3_indices, process_basis)
 centroid_result <- process_basis(NULL, is_centroid = TRUE)
-plot_list <- c(anchor_results, list(centroid_result))
+plot_list <- c(list(centroid_result), anchor_results)
 
 # --- [4. TRIANGULATION & CONSENSUS] ---
 consensus_growth <- Reduce(intersect, lapply(plot_list, function(x) x$verified))
