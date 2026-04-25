@@ -35,8 +35,8 @@ raw_L <- pca_res$rotation[, 1:2]
 L_lengths <- sqrt(rowSums(raw_L^2))
 scaled_L <- sweep(raw_L, 1, L_lengths, "/") 
 top_idx <- order(rowSums(scaled_L^2), decreasing = TRUE)[1:10] # Top X
-# If you intend to draw a pattern: top_idx <- order(abs(scaled_L[, "PC1"]), decreasing = TRUE)
-# If you intend to draw a pattern: top_idx <- order(abs(scaled_L[, "PC2"]), decreasing = TRUE)
+# If you intend to draw a pattern: top_idx <- order(abs(scaled_L[, "PC1"]), decreasing = TRUE)[1:10] # Top X
+# If you intend to draw a pattern: top_idx <- order(abs(scaled_L[, "PC2"]), decreasing = TRUE)[1:10] # Top X
 
 L_top <- scaled_L[top_idx, 1:2]
 S <- pca_res$x
