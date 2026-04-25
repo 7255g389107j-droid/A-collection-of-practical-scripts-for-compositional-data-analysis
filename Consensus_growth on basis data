@@ -29,7 +29,8 @@ raw_m <- as.matrix(Dataset[, colSums(Dataset == 0) == 0])
 valid_mask <- apply(raw_m, 2, function(x) all(x >= manual_threshold))
 d_m <- sweep(raw_m[, valid_mask], 1, rowSums(raw_m[, valid_mask]), "/")
 n_s <- nrow(d_m); n_t <- ncol(d_m); t_names <- colnames(d_m)
-avg_min_val <- mean(apply(d_m, 2, min))
+d_mm <- raw_m[, valid_mask, drop = FALSE]
+avg_min_val <- mean(apply(d_mm, 2, min))
 eff_lib <- 1 / avg_min_val
 
 # --- [2. METRIC EXTRACTION] ---
