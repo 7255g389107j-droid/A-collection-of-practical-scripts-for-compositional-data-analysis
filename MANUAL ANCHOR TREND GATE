@@ -35,6 +35,9 @@ if(!(manual_anchor_name %in% colnames(raw_m))) stop("Manual anchor not found in 
 valid_mask <- apply(raw_m, 2, function(x) all(x >= manual_threshold))
 d_m <- sweep(raw_m[, valid_mask], 1, rowSums(raw_m[, valid_mask]), "/")
 n_s <- nrow(d_m); n_t <- ncol(d_m); t_names <- colnames(d_m)
+d_mm <- raw_m[, valid_mask, drop = FALSE]
+avg_min_val <- mean(apply(d_mm, 2, min))
+eff_lib <- 1 / avg_min_val
 
 # --- [2. METRIC EXTRACTION & BASIS SELECTION] ---
 get_metrics <- function(P) {
@@ -115,6 +118,7 @@ cat("   ITAGAKI V11000.0: MANUAL ANCHOR FACTUAL REPORT\n")
 cat("==========================================================\n")
 cat(sprintf("MANUAL ANCHOR  : %s\n", manual_anchor_name))
 cat(sprintf("SNR SENSITIVITY: %.2f | Pass_SNR: %.1f\n", snr_sensitivity, pass_snr_limit))
+cat(sprintf("DYNAMIC SCALE USED (EFF_LIB): %.2e\n", eff_lib))
 cat("----------------------------------------------------------\n")
 cat("VERIFIED MONOTONIC GROWTH (Passed Manual Anchor + Centroid + LOO):\n")
 if(length(consensus_growth) > 0) print(consensus_growth) else cat("NONE DETECTED\n")
