@@ -55,7 +55,8 @@ plot(S[, 1:2], pch = 21, bg = "#BDC3C7", col = "#7F8C8D", cex = 1.8,
      xlab = paste0("PC1 (", pc1_v, "%): Structural Shift"), 
      ylab = paste0("PC2 (", pc2_v, "%): Underlying Trend"),
      main = "Aitchison BI-PLOT",
-     xlim = x_lim, ylim = y_lim)
+     xlim = x_lim, ylim = y_lim,
+　　 asp = 1)
 
 grid(col = "#ECF0F1", lty = 1)
 abline(h = 0, v = 0, lty = 2, col = "#95A5A6")
@@ -105,7 +106,6 @@ legend("topright", legend = c("Samples", "Top 10 Drivers"),
        pch = c(21, NA), lty = c(NA, 1), col = c("#7F8C8D", "#E74C3C"), 
        pt.bg = c("#BDC3C7", NA), bty = "n", cex = 0.8)
 
-results
 S
 scaled_L
 L_top
@@ -123,7 +123,8 @@ plot(S[, 1:2], pch = 21, bg = "#BDC3C7", col = "#7F8C8D", cex = 1.8,
      xlab = paste0("PC1 (", pc1_v, "%): Structural Shift"), 
      ylab = paste0("PC2 (", pc2_v, "%): Underlying Trend"),
      main = "Aitchison BI-PLOT",
-     xlim = x_lim, ylim = y_lim)
+     xlim = x_lim, ylim = y_lim,
+     asp = 1)
 
 grid(col = "#ECF0F1", lty = 1)
 abline(h = 0, v = 0, lty = 2, col = "#95A5A6")
@@ -168,6 +169,10 @@ for(i in 1:nrow(L_top)) {
 # ---  CHRONOLOGICAL TRAJECTORY ---
 lines(S[, 1], S[, 2], col = "#3498DB", lty = 3, lwd = 2)
 
+# ---  SUMMARY ---
+legend("topright", legend = c("Samples", "Top 10 Drivers"), 
+       pch = c(21, NA), lty = c(NA, 1), col = c("#7F8C8D", "#E74C3C"), 
+       pt.bg = c("#BDC3C7", NA), bty = "n", cex = 0.8)
 
 # Close the device and save the file
 dev.off()
