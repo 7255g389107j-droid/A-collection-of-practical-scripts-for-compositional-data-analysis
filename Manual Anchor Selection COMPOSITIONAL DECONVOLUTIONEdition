@@ -119,6 +119,7 @@ mtext(paste("Stability Class:", sig_class[anchor_idx], "| IR:", round(m_global$i
 cat("\n==========================================================\n")
 cat("      DECONVOLUTION ENGINE: MANUAL ANCHOR SUMMARY         \n")
 cat("==========================================================\n")
+cat(sprintf("DYNAMIC SCALE USED (EFF_LIB): %.2e\n", eff_lib))
 cat(sprintf("Selected Anchor:  %s\n", manual_anchor))
 cat(sprintf("Physical Status:  %s\n", sig_class[anchor_idx]))
 cat(sprintf("Invariance Ratio: %.4f\n", m_global$ir[anchor_idx]))
