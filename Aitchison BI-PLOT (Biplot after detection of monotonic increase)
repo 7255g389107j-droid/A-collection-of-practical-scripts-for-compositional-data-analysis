@@ -115,7 +115,7 @@ L_top
 file_name <- "Aitchison_Biplot_Output.pdf"
 
 # Start the PDF device
-pdf(file = file_name, width = 10, height = 8, family = "sans")
+pdf(file = file_name, width = 10, height = 10, family = "sans")
 
 # ---  PLOT INITIALIZATION ---
 par(mar = c(5, 6, 5, 5), bg = "#FDFDFD", las = 1)
