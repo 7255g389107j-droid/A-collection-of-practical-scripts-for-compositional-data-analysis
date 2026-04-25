@@ -123,6 +123,11 @@ cat(sprintf("Selected Anchor:  %s\n", manual_anchor))
 cat(sprintf("Physical Status:  %s\n", sig_class[anchor_idx]))
 cat(sprintf("Invariance Ratio: %.4f\n", m_global$ir[anchor_idx]))
 cat(sprintf("95%% CI Logic:    %s\n", 
-    if(any(low <= 1 & upp >= 1)) "STABLE (Baseline Overlap)" else "SIGNAL DOMINANT"))
+    if (all(low == upp)) {
+        "UNRELIABLE (No variance detected - Potential calculation error or insufficient data)"
+    } else if (any(low > 1 | upp < 1)) {
+        "UNRELIABLE (Anchor shows definitive change - Invalid for deconvolution)"
+    } else {
+        "RELIABLE (Baseline 1 is within CI - Consistent with stable anchor logic)"
+    }))
 cat("==========================================================\n")
-
