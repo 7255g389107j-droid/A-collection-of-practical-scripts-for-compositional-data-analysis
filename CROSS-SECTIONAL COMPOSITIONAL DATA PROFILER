@@ -100,3 +100,130 @@ cat("==========================================================\n")
 print(final_report, row.names = FALSE)
 cat("==========================================================\n")
 cat(sprintf("PDF Report saved as: %s\n", pdf_file))
+
+# =================================================================
+# ITAGAKI-SYSTEM: CROSS-SAMPLE RELIABILITY INTEGRATOR
+# -----------------------------------------------------------------
+# Feature: Extraction of Universally Reliable Taxa (Quantitative)
+# Feature: Qualitative Presence-Absence Map (Non-Reliable)
+# Logic: Based on Individual 10x Noise Floor thresholds
+# =================================================================
+
+# --- 1. PRE-CALCULATION OF RELIABILITY MATRIX ---
+# Initialize a matrix to store the reliability status (Binary)
+# 1: Reliable (Non-zero & >= 10x Floor), 0: Detected but Unreliable, -1: Absent (Zero)
+rel_status_mat <- matrix(-1, nrow=n_s, ncol=ncol(P_raw), 
+                         dimnames=list(sample_ids, colnames(P_raw)))
+
+for(i in 1:n_s) {
+  # Get individual sample data and its specific noise floor
+  current_sample <- P_raw[i, ]
+  non_zero_mask <- current_sample > 0
+  
+  if(any(non_zero_mask)) {
+    floor_i <- 1 / (1 / min(current_sample[non_zero_mask]))
+    
+    # Identify Reliable (1) vs Detected but Unreliable (0)
+    rel_status_mat[i, non_zero_mask] <- ifelse(current_sample[non_zero_mask] >= (floor_i * 10), 1, 0)
+  }
+}
+
+# --- 2. EXTRACTION: UNIVERSALLY RELIABLE TAXA (URT) ---
+# Components that are 'Reliable' in EVERY sample where they exist, 
+# and exist in ALL samples (Strict Consensus).
+urt_mask <- apply(rel_status_mat, 2, function(x) all(x == 1))
+universal_reliable_taxa <- colnames(P_raw)[urt_mask]
+
+# --- 3. EXTRACTION: QUALITATIVE MAP (PRESENCE WITHOUT CERTAINTY) ---
+# Components that are detected (> -1) but fail the 'Reliable' test in at least one sample.
+qualitative_taxa_mask <- apply(rel_status_mat, 2, function(x) any(x == 0) & all(x >= 0))
+qualitative_taxa <- colnames(P_raw)[qualitative_taxa_mask]
+
+# --- 4. OUTPUT: SYSTEMATIC CONSOLIDATED REPORT ---
+cat("\n==========================================================\n")
+cat("      UNIVERSALLY RELIABLE TAXA (Quantitative Core)       \n")
+cat("      Definition: Non-zero & >= 10x Floor in ALL samples  \n")
+cat("==========================================================\n")
+if(length(universal_reliable_taxa) > 0) {
+  print(universal_reliable_taxa)
+} else {
+  cat("None: No taxa met the strict reliability criteria across all samples.\n")
+}
+
+cat("\n==========================================================\n")
+cat("      QUALITATIVE PRESENCE LIST (Presence Only)           \n")
+cat("      Definition: Detected, but below 10x Floor threshold \n")
+cat("==========================================================\n")
+if(length(qualitative_taxa) > 0) {
+  # Create a table showing how many samples each qualitative taxon was detected in
+  qual_summary <- data.frame(
+    Taxon = qualitative_taxa,
+    Detection_Count = apply(rel_status_mat[, qualitative_taxa, drop=FALSE] >= 0, 2, sum),
+    Reliability_Rate = apply(rel_status_mat[, qualitative_taxa, drop=FALSE] == 1, 2, mean)
+  )
+  print(qual_summary, row.names = FALSE)
+} else {
+  cat("None detected.\n")
+}
+
+# =================================================================
+# ITAGAKI-SYSTEM: PHYSICAL RELIABILITY HEATMAP (ANTI-COLLISION)
+# -----------------------------------------------------------------
+# Feature: Separated Legend Space & Dynamic Margins
+# Status: 1 (Reliable: Blue), 0 (Uncertain: Yellow), -1 (Absent: Gray)
+# Developed by: Tatsuki Itagaki
+# =================================================================
+
+# --- 1. SETUP PLOT DEVICE ---
+file_name <- "ITAGAKI_Reliability_Heatmap_Fixed.pdf"
+pdf(file_name, width = 16, height = 10)
+
+# Create a layout: Heatmap (Left, 85%) and Legend (Right, 15%)
+layout(matrix(c(1, 2), nrow = 1), widths = c(0.85, 0.15))
+
+# --- 2. HEATMAP AREA ---
+# Adjust margins: bottom for taxa names, left for sample IDs
+par(mar = c(12, 10, 5, 2), bg = "#FDFDFD")
+
+# Color Palette: Absent(Gray), Uncertain(Yellow), Reliable(Blue)
+status_colors <- c("#D5D8DC", "#F1C40F", "#2980B9") 
+
+# Re-sorting for visual structure (Reliability order)
+overall_reliability <- colSums(rel_status_mat == 1)
+sorted_taxa_idx <- order(overall_reliability, decreasing = TRUE)
+plot_mat <- rel_status_mat[, sorted_taxa_idx]
+
+# Plot the heatmap
+image(1:ncol(plot_mat), 1:nrow(plot_mat), t(plot_mat),
+      col = status_colors,
+      xaxt = "n", yaxt = "n", xlab = "", ylab = "",
+      main = "SYSTEM RELIABILITY MAP (Physical Diagnostics)")
+
+# Axis Labels
+axis(1, at = 1:ncol(plot_mat), labels = colnames(plot_mat), las = 2, cex.axis = 0.7)
+axis(2, at = 1:nrow(plot_mat), labels = rownames(plot_mat), las = 1, cex.axis = 0.8)
+
+# Add grid lines
+abline(v = (1:ncol(plot_mat)) + 0.5, col = "white", lwd = 0.5)
+abline(h = (1:nrow(plot_mat)) + 0.5, col = "white", lwd = 0.5)
+
+# --- 3. SEPARATED LEGEND AREA ---
+# Reset margins for legend panel
+par(mar = c(0, 0, 0, 0))
+plot.new() # Create empty space for legend
+
+# Place the legend in the center of the right panel
+legend("center", 
+       legend = c("Reliable (>=10x Floor)", "Uncertain (Presence)", "Absent (Zero)"),
+       fill = rev(status_colors), 
+       border = "black",
+       bty = "n", 
+       cex = 1.0,
+       title = "Physical Status")
+
+# Close and Save
+dev.off()
+
+cat(sprintf("\nSUCCESS: Heatmap saved to %s\n", file_name))
+cat("Layout calibrated: Legend is now placed in an independent side panel.\n")
+
