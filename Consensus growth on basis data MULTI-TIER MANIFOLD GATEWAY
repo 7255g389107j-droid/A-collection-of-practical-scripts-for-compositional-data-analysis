@@ -186,5 +186,3 @@ if(length(robust_taxa) > 0 || length(emerging_taxa) > 0) {
 dev.off()
 cat(sprintf("\nAnalysis report generated: %s\n", pdf_filename))
 
-dev.off()
-cat(sprintf("\nSUCCESS: Analysis plots saved to %s\n", pdf_filename))
