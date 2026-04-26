@@ -142,3 +142,42 @@ print(strict_consensus, row.names = FALSE)
 max_diff <- apply(d_m, 2, function(x) max(x) - min(x))
 potential_dictator <- names(sort(max_diff, decreasing = TRUE)[1])
 cat("Most Volatile Candidate:", potential_dictator, "\n")
+
+# --- 8. EXPORT TO PDF ---
+# Set the filename and dimensions (Width x Height in inches)
+pdf_filename <- "Deconvolution_Interval_Estimation.pdf"
+pdf(pdf_filename, width = 12, height = 8)
+
+# Re-run the visualization block
+par(mar=c(8, 7, 7, 2))
+data_min <- min(low_matrix, na.rm=TRUE); data_max <- max(upp_matrix, na.rm=TRUE)
+y_pad <- (data_max - data_min) * 0.35
+
+plot(NULL, xlim=c(0.5, n_s + 0.5), ylim=c(data_min - y_pad, data_max + y_pad), 
+     xaxt="n", yaxt="n", xlab="", ylab="Absolute Ratio Range")
+
+title(main="Integrated Absolute Scaling Factor per Sample", line=5)
+anchor_info <- paste(sample_names, "(n=", anchors_count, ")", collapse=", ")
+mtext(paste("95% interval estimation of absolute ratio reconstruction\nAnchors per Sample:", anchor_info), 
+      side=3, line=1.0, cex=0.75, col="gray20")
+
+axis(1, at=1:n_s, labels=sample_names, las=1, cex.axis=0.9); axis(2, las=1); abline(h=1, lty=2, col="red", lwd=1.5)
+
+for(i in 1:n_s) {
+  valid_idx <- which(low_matrix[i,] <= 1.0 & upp_matrix[i,] >= 1.0)
+  if(length(valid_idx) > 0) {
+    offsets <- seq(-0.35, 0.35, length.out=length(valid_idx))
+    for(k in 1:length(valid_idx)) {
+      v_idx <- valid_idx[k]
+      arrows(i + offsets[k], low_matrix[i, v_idx], i + offsets[k], upp_matrix[i, v_idx], 
+             angle=90, code=3, length=0.015, col=rgb(0.1, 0.3, 0.5, 0.4), lwd=1.2)
+    }
+  }
+  text(i, final_upp[i], labels=sprintf("%.3f", final_upp[i]), pos=3, cex=0.95, font=2, col="darkblue", xpd=TRUE)
+  text(i, final_low[i], labels=sprintf("%.3f", final_low[i]), pos=1, cex=0.95, font=2, col="darkred", xpd=TRUE)
+}
+
+# Close the PDF device
+dev.off()
+
+cat(sprintf("\nPDF plot has been saved as: %s in the current directory: %s\n", pdf_filename, getwd()))
