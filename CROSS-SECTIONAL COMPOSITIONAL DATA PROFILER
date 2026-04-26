@@ -64,7 +64,7 @@ for(i in 1:n_s) {
     rect(n_detected * 0.62, 0.2, n_detected * 1.05, 1.8, col = rgb(1,1,1,0.9), border = "#BDC3C7")
     text(n_detected * 0.65, 1.50, paste("Detected Taxa (Non-Zero) :", n_detected), pos = 4, font = 2, cex = 1.0)
     text(n_detected * 0.65, 1.15, paste("Reliable Taxa (>=10x)  :", n_reliable), pos = 4, font = 2, cex = 1.0, col = "#2980B9")
-    text(n_detected * 0.65, 0.85, paste("Eff. Library Size        :", format(round(eff_lib_i), big.mark=",")), pos = 4, font = 1, cex = 0.9)
+    text(n_detected * 0.65, 0.85, paste("Eff. Library Size        :", sprintf("%.2e", round(eff_lib_i))), pos = 4, font = 1, cex = 0.9)
     text(n_detected * 0.65, 0.55, paste("Poisson Noise Floor      :", sprintf("%.2e", floor_i)), pos = 4, font = 1, cex = 0.9, col = "#E74C3C")
     text(n_detected * 0.65, 0.35, paste("Sample Index             :", i), pos = 4, font = 1, cex = 0.8, col = "gray")
 
