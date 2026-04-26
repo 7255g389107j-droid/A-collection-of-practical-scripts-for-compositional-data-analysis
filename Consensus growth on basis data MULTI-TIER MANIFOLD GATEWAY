@@ -126,19 +126,23 @@ cat("----------------------------------------------------------\n")
 
 # --- [OUTPUT CONFIGURATION: PDF GENERATION] ---
 pdf_filename <- "ITAGAKI_Recovery_Analysis.pdf"
-pdf(pdf_filename, width = 18, height = 9)
+# Using a stable 16:9 aspect ratio to ensure enough plotting area
+pdf(pdf_filename, width = 16, height = 9)
 
-# --- [VISUALIZATION: REFINED SIDE-BY-SIDE (ITALIC TAXA & PDF)] ---
+# --- [VISUALIZATION: SIDE-BY-SIDE WITHOUT RIGHT LABELS] ---
 if(length(robust_taxa) > 0 || length(emerging_taxa) > 0) {
   
   abs_r_all <- if(length(robust_taxa) > 0) sweep(d_m[, robust_taxa, drop = FALSE], 1, centroid_res$sf, "*") else NULL
   abs_e_all <- if(length(emerging_taxa) > 0) sweep(d_m[, emerging_taxa, drop = FALSE], 1, centroid_res$sf, "*") else NULL
   
+  # Unified scale calculation
   global_y_range <- range(c(abs_r_all, abs_e_all), na.rm = TRUE)
-  global_y_lim <- c(global_y_range[1], global_y_range[2] * 1.1)
+  # Increase upper limit (1.25) to provide clear space for the top-left legend
+  global_y_lim <- c(global_y_range[1], global_y_range[2] * 1.25)
 
   # Layout: 1 row, 2 columns
-  par(mfrow = c(1, 2), mar = c(5, 7, 5, 8), mgp = c(3, 0.7, 0), bg = "#FDFDFD")
+  # Reduced right margin (mar[4]=2) since labels are removed
+  par(mfrow = c(1, 2), mar = c(5, 5, 5, 2), mgp = c(3, 0.7, 0), bg = "#FDFDFD")
   
   # --- [LEFT PLOT: ROBUST TAXA] ---
   if(!is.null(abs_r_all)) {
@@ -148,16 +152,15 @@ if(length(robust_taxa) > 0 || length(emerging_taxa) > 0) {
             xlab = "Sample Index", ylab = "", las = 1,
             ylim = global_y_lim, cex.axis = 0.8)
     
-    mtext("Abs Mass Scale (Rel. to S1)", side = 2, line = 4.5, font = 2, cex = 0.9)
+    mtext("Abs Mass Scale (Rel. to S1)", side = 2, line = 3.5, font = 2, cex = 0.9)
     grid(col = "gray80")
     
-    # Right-side labels with ITALIC font
-    for(j in 1:length(robust_taxa)) {
-      v_off <- (j %% 3 - 1) * (diff(global_y_range) * 0.02)
-      # font = 4 sets bold italic, font = 3 sets plain italic
-      text(n_s, abs_r_all[n_s, j] + v_off, labels = robust_taxa[j], 
-           pos = 4, offset = 0.5, cex = 0.7, col = cols_r[j], xpd = TRUE, font = 4)
-    }
+    # COMPREHENSIVE LEGEND (Top-Left, Bold-Italic)
+    legend("topleft", legend = robust_taxa, col = cols_r, lty = 1, lwd = 2, 
+           cex = 0.7, bty = "n", text.font = 4, ncol = 1)
+  } else {
+    plot.new()
+    text(0.5, 0.5, "No Robust Taxa Detected", cex = 1.2)
   }
 
   # --- [RIGHT PLOT: EMERGING TAXA] ---
@@ -168,18 +171,20 @@ if(length(robust_taxa) > 0 || length(emerging_taxa) > 0) {
             xlab = "Sample Index", ylab = "", las = 1,
             ylim = global_y_lim, cex.axis = 0.8)
     
-    mtext("Abs Mass Scale (Rel. to S1)", side = 2, line = 4.5, font = 2, cex = 0.9)
+    mtext("Abs Mass Scale (Rel. to S1)", side = 2, line = 3.5, font = 2, cex = 0.9)
     grid(col = "gray80")
     
-    # Right-side labels with ITALIC font
-    for(j in 1:length(emerging_taxa)) {
-      v_off <- (j %% 3 - 1) * (diff(global_y_range) * 0.02)
-      text(n_s, abs_e_all[n_s, j] + v_off, labels = emerging_taxa[j], 
-           pos = 4, offset = 0.5, cex = 0.7, col = cols_e[j], xpd = TRUE, font = 4)
-    }
+    # COMPREHENSIVE LEGEND (Top-Left, Bold-Italic)
+    legend("topleft", legend = emerging_taxa, col = cols_e, lty = 1, lwd = 2, 
+           cex = 0.7, bty = "n", text.font = 4, ncol = 1)
+  } else {
+    plot.new()
+    text(0.5, 0.5, "No Emerging Taxa Detected", cex = 1.2)
   }
 }
 
-# Close PDF device
+dev.off()
+cat(sprintf("\nAnalysis report generated: %s\n", pdf_filename))
+
 dev.off()
 cat(sprintf("\nSUCCESS: Analysis plots saved to %s\n", pdf_filename))
