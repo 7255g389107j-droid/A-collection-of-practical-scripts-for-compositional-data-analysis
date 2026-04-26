@@ -155,10 +155,10 @@ cat("      INTERPRETATION OF ABSOLUTE RECONSTRUCTION           \n")
 cat("==========================================================\n")
 
 # 1. CERTAINTY EVALUATION BASED ON ANCHOR RATIO
-avg_anchor_count <- mean(anchors_count)
-anchor_ratio <- avg_anchor_count / n_t
+min_anchor_count <- min(anchors_count)
+anchor_ratio <- min_anchor_count / n_t
 
-cat(sprintf("Total Taxa: %d | Avg Valid Anchors: %.1f\n", n_t, avg_min_val))
+cat(sprintf("Total Taxa: %d | Min Valid Anchors: %.1f\n", n_t, min_anchor_count))
 cat(sprintf("Anchor Consensus Ratio: %.1f%%\n", anchor_ratio * 100))
 
 # 2. DIAGNOSTIC INTERPRETATION
