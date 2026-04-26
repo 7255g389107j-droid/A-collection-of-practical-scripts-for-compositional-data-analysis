@@ -103,6 +103,9 @@ taxa_summary <- data.frame(
 # Sort by IR (most stable first)
 print(taxa_summary[order(taxa_summary$IR), ], row.names = FALSE)
 
+# Output the total number of filtered taxa used in the analysis
+cat(sprintf("\nTotal Number of Analyzed Taxa: %d\n", n_t))
+
 cat(sprintf("\nDYNAMIC SCALE (EFF_LIB): %.2e\n", eff_lib))
 
 cat("\n--- FINAL SAMPLE CONSOLIDATED SUMMARY ---\n")
