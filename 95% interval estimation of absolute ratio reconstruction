@@ -177,7 +177,23 @@ if (anchor_ratio >= 0.5) {
     cat("WARNING: Few stable anchors detected. The absolute scale is difficult to fix.\n")
 }
 
-# 3. SCIENTIFIC CAVEATS (THEORETICAL LIMITS)
+# 3. DIAGNOSTIC INTERPRETATION
+cat("\n[DIAGNOSTIC SUMMARY]\n")
+
+if (anchor_ratio >= 0.5) {
+    cat("STATUS: HIGHLY ROBUST CONSENSUS\n")
+    cat("INTERPRETATION: A clear majority of taxa support the 'Invariant Absolute Quantity' hypothesis.\n")
+    cat("The absolute reconstruction is highly reliable, with fluctuations within a 2-fold range.\n")
+} else if (anchor_ratio >= 0.333) {
+    cat("STATUS: MODERATE CONSENSUS\n")
+    cat("INTERPRETATION: A significant portion of the community remains stable.\n")
+    cat("The reconstruction is reliable, with estimated variations within a 3-fold range.\n")
+} else {
+    cat("STATUS: LOW CONSENSUS / INDETERMINATE\n")
+    cat("WARNING: Few stable anchors detected (less than 33.3%). The absolute scale is difficult to fix.\n")
+}
+
+# 4. SCIENTIFIC CAVEATS (THEORETICAL LIMITS)
 cat("\n[SCIENTIFIC CONTEXT & PRINCIPLES]\n")
 cat("- INVARIANCE PRINCIPLE: This engine assumes that the most stable taxa (under Poisson noise limits)\n")
 cat("  represent the true absolute baseline. Since the intersection includes 1.0, the hypothesis of\n")
