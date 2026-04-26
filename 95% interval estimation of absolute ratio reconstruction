@@ -108,6 +108,36 @@ cat(sprintf("\nDYNAMIC SCALE (EFF_LIB): %.2e\n", eff_lib))
 cat("\n--- FINAL SAMPLE CONSOLIDATED SUMMARY ---\n")
 print(final_summary, row.names = FALSE)
 
+# --- 7. INTERSECTION OF VALID ANCHOR INTERVALS (Strict Consensus) ---
+# This calculates the narrowest range where ALL valid anchors overlap.
+# If no common intersection exists, it indicates high anchor discordance.
+
+strict_low <- numeric(n_s)
+strict_upp <- numeric(n_s)
+
+for(i in 1:n_s) {
+  valid_idx <- which(low_matrix[i,] <= 1.0 & upp_matrix[i,] >= 1.0)
+  
+  if(length(valid_idx) > 0) {
+    # Intersection: Maximum of all lower bounds and Minimum of all upper bounds
+    strict_low[i] <- max(low_matrix[i, valid_idx])
+    strict_upp[i] <- min(upp_matrix[i, valid_idx])
+  } else {
+    strict_low[i] <- NA
+    strict_upp[i] <- NA
+  }
+}
+
+strict_consensus <- data.frame(
+  Sample_Label = sample_names,
+  Intersection_Lower = round(strict_low, 3),
+  Intersection_Upper = round(strict_upp, 3),
+  Status = ifelse(strict_low <= strict_upp, "Valid Intersection", "No Common Overlap")
+)
+
+cat("\n--- STRICT INTERSECTION SUMMARY (Common Overlap) ---\n")
+print(strict_consensus, row.names = FALSE)
+
 # Check the maximum change in occupancy rate.
 max_diff <- apply(d_m, 2, function(x) max(x) - min(x))
 potential_dictator <- names(sort(max_diff, decreasing = TRUE)[1])
