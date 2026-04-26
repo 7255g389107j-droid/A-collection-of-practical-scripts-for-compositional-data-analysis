@@ -183,11 +183,11 @@ cat("\n[DIAGNOSTIC SUMMARY]\n")
 if (anchor_ratio >= 0.5) {
     cat("STATUS: HIGHLY ROBUST CONSENSUS\n")
     cat("INTERPRETATION: A clear majority of taxa support the 'Invariant Absolute Quantity' hypothesis.\n")
-    cat("The absolute reconstruction is highly reliable, with fluctuations within a 2-fold range.\n")
+    cat("The absolute reconstruction is highly reliable, with fluctuations within a 2-fold range (snr_vals >= 0.5 & snr_vals <= 2.0).\n")
 } else if (anchor_ratio >= 0.333) {
     cat("STATUS: MODERATE CONSENSUS\n")
     cat("INTERPRETATION: A significant portion of the community remains stable.\n")
-    cat("The reconstruction is reliable, with estimated variations within a 3-fold range.\n")
+    cat("The reconstruction is reliable, with estimated variations within a 3-fold range (snr_vals >= 0.333 & snr_vals <= 3.0).\n")
 } else {
     cat("STATUS: LOW CONSENSUS / INDETERMINATE\n")
     cat("WARNING: Few stable anchors detected (less than 33.3%). The absolute scale is difficult to fix.\n")
